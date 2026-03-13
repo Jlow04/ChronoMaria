@@ -209,6 +209,12 @@ cd genetic_algorithm
 python server.py
 ```
 
+If `python server.py` fails on Windows, run:
+
+```powershell
+c:/python314/python.exe server.py
+```
+
 **Expected output:**
 ```
 * Running on http://0.0.0.0:8000

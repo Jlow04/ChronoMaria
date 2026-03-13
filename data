@@ -1,0 +1,59 @@
+section,course_code,course_title,units,schedule_mwf,schedule_tth,room
+BSAR1A,ArchMath2,Differential and Integral Calculus,3,18:00-19:30,18:00-19:30,S110
+BSAR1A,AR121,Architectural Design 2 - Creative Design & Fundamentals,2,13:00-15:00,13:00-15:00,D101
+BSAR1A,AR122,Architectural Visual Communications 3 - Graphics 2,3,09:00-12:30,09:00-12:30,D101
+BSAR1A,AR123,Architectural Visual Communications 4 - Visual Techniques 2,2,13:00-15:00,13:00-15:00,D101
+BSAR1A,GPIC,Philippine Indigenous Communities,3,09:00-10:30,09:00-10:30,S110
+BSAR1A,GSelf,Understanding the Self,3,10:30-12:00,10:30-12:00,S110
+BSAR1A,PEECO,People and the Earth's Ecosystem,3,16:30-18:00,16:30-18:00,S110
+BSAR1A,CFE102,Christian Morality in Our Times,3,15:00-16:30,15:00-16:30,AP104
+BSAR1A,PATHFIT2,Physical Activities Towards Health and Fitness,2,16:30-17:30,16:30-17:30,Gym
+
+BSAR1B,ArchMath2,Differential and Integral Calculus,3,18:00-19:30,18:00-19:30,S102
+BSAR1B,AR121,Architectural Design 2 - Creative Design & Fundamentals,2,10:30-12:30,10:30-12:30,D102
+BSAR1B,AR122,Architectural Visual Communications 3 - Graphics 2,3,13:00-16:30,13:00-16:30,D102
+BSAR1B,AR123,Architectural Visual Communications 4 - Visual Techniques 2,2,13:00-15:00,13:00-15:00,D102
+BSAR1B,GPIC,Philippine Indigenous Communities,3,15:00-16:30,15:00-16:30,S110
+BSAR1B,GSelf,Understanding the Self,3,07:30-09:00,07:30-09:00,S110
+BSAR1B,PEECO,People and the Earth's Ecosystem,3,09:00-10:30,09:00-10:30,S102
+BSAR1B,CFE102,Christian Morality in Our Times,3,16:30-18:00,16:30-18:00,AP304
+BSAR1B,PATHFIT2,Physical Activities Towards Health and Fitness,2,07:30-08:30,07:30-08:30,Gym
+
+BSAR2A,ArCE1,Statics of Rigid Bodies,3,07:30-09:00,07:30-09:00,E103
+BSAR2A,GEthics,Ethics,3,09:00-10:30,09:00-10:30,S110
+BSAR2A,GSTS,Science Technology and Society,3,09:00-10:30,09:00-10:30,S110
+BSAR2A,GWorld,The Contemporary World,3,13:30-15:00,13:30-15:00,S109
+BSAR2A,GArt,Art Appreciation,3,09:00-10:30,09:00-10:30,E102
+BSAR2A,CFE104,CICM Mission Identity,3,07:30-09:00,07:30-09:00,S102
+BSAR2A,PATHFIT4,Physical Activity Towards Health and Fitness Sports,2,10:30-11:30,10:30-11:30,Gym
+
+BSAR3A,AR323,Computer Aided Design and Drafting for Architecture 2,2,10:30-12:30,10:30-12:30,S202
+BSAR3A,AR326,Theory of Structures,3,18:00-19:30,18:00-19:30,S102
+BSAR3A,AR325,Building Technology 4 Specification Writing and Quantity Surveying,3,16:30-19:00,16:30-19:00,D102
+BSAR3A,AR321,Architectural Design 6 Site Development Planning and Landscaping,4,07:30-10:30,07:30-10:30,D104
+BSAR3A,AR327,Planning 1 Site Planning and Landscape Architecture,3,13:30-16:30,13:30-16:30,D101
+BSAR3A,AR328,Building Utilities 3 Acoustics and Lighting Systems,3,07:30-10:00,07:30-10:00,D103
+BSAR3A,AR329,Professional Practice 1 Laws Affecting the Practice of Architecture,3,13:30-15:00,13:30-15:00,E102
+BSAR3A,GMath,Mathematics in the Modern World,3,13:30-15:00,13:30-15:00,S110
+
+prof_id,first_name,last_name,middle_initial,department,email
+1,Juan,Dela Cruz,S,Architecture,juan.delacruz@smu.edu.ph
+2,Maria,Santos,L,Architecture,maria.santos@smu.edu.ph
+3,Jose,Reyes,M,Architecture,jose.reyes@smu.edu.ph
+4,Ana,Gonzales,P,Architecture,ana.gonzales@smu.edu.ph
+5,Carlos,Ramos,T,Engineering,carlos.ramos@smu.edu.ph
+6,Mark,Garcia,D,Engineering,mark.garcia@smu.edu.ph
+7,Paolo,Navarro,J,Engineering,paolo.navarro@smu.edu.ph
+8,Angela,Flores,R,General Education,angela.flores@smu.edu.ph
+9,Rafael,Mendoza,K,General Education,rafael.mendoza@smu.edu.ph
+10,Christine,Lopez,A,General Education,christine.lopez@smu.edu.ph
+11,Daniel,Castillo,V,Mathematics,daniel.castillo@smu.edu.ph
+12,Patricia,Ortega,C,Mathematics,patricia.ortega@smu.edu.ph
+13,Anthony,Villanueva,G,Architecture,anthony.villanueva@smu.edu.ph
+14,Ronald,Bautista,E,Architecture,ronald.bautista@smu.edu.ph
+15,Liza,Aquino,N,General Education,liza.aquino@smu.edu.ph
+16,Kevin,Domingo,S,Engineering,kevin.domingo@smu.edu.ph
+17,Erica,Salazar,M,General Education,erica.salazar@smu.edu.ph
+18,Victor,Padilla,B,Engineering,victor.padilla@smu.edu.ph
+19,Grace,Cruz,F,Mathematics,grace.cruz@smu.edu.ph
+20,Michael,Torres,H,Architecture,michael.torres@smu.edu.ph

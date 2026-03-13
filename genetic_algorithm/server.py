@@ -2,6 +2,7 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 from genetic_algorithm import GeneticAlgorithm
 import json
+import os
 
 app = Flask(__name__)
 CORS(app)
@@ -22,7 +23,8 @@ def generate_schedule():
             rooms=rooms,
             population_size=constraints.get('population_size', 100),
             mutation_rate=constraints.get('mutation_rate', 0.1),
-            max_generations=constraints.get('max_generations', 1000)
+            max_generations=constraints.get('max_generations', 1000),
+            max_runtime_seconds=constraints.get('max_runtime_seconds', 20)
         )
         
         # Run the genetic algorithm
@@ -41,4 +43,5 @@ def health_check():
     return jsonify({'status': 'OK', 'message': 'Genetic Algorithm Service is running'})
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=8000, debug=True)
+    debug_mode = os.getenv('FLASK_DEBUG', '0') == '1'
+    app.run(host='0.0.0.0', port=8000, debug=debug_mode, use_reloader=False)

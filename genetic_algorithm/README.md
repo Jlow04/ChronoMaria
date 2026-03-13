@@ -1,4 +1,4 @@
-# Genetic Algorithm Module for ChronoMaria
+``# Genetic Algorithm Module for ChronoMaria
 
 This module implements a genetic algorithm for optimizing faculty loading schedules.
 

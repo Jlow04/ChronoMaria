@@ -83,6 +83,14 @@ export const roomService = {
 
 // Schedule Service
 export const scheduleService = {
+  count: async () => {
+    const response = await api.get('/schedule/count');
+    return response.data;
+  },
+  getMaster: async () => {
+    const response = await api.get('/schedule/master');
+    return response.data;
+  },
   generate: async (data) => {
     const response = await api.post('/schedule/generate', data);
     return response.data;
