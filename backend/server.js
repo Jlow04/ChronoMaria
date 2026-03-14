@@ -16,6 +16,7 @@ const facultyRoutes = require('./routes/facultyRoutes');
 const subjectRoutes = require('./routes/subjectRoutes');
 const roomRoutes = require('./routes/roomRoutes');
 const scheduleRoutes = require('./routes/scheduleRoutes');
+const auditLogRoutes = require('./routes/auditLogRoutes');
 
 // API Routes
 app.use('/api/users', userRoutes);
@@ -23,6 +24,7 @@ app.use('/api/faculty', facultyRoutes);
 app.use('/api/subjects', subjectRoutes);
 app.use('/api/rooms', roomRoutes);
 app.use('/api/schedule', scheduleRoutes);
+app.use('/api/audit-logs', auditLogRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {
