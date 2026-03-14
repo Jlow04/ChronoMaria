@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import Navbar from '../components/Navbar';
-import { facultyService, subjectService, roomService } from '../services/api';
+import { facultyService, subjectService, roomService, scheduleService } from '../services/api';
 import './Dashboard.css';
 
 function Dashboard() {
@@ -24,11 +24,13 @@ function Dashboard() {
         roomService.getAll()
       ]);
 
+      const scheduleCount = await scheduleService.count();
+
       setStats({
         facultyCount: faculty.length,
         subjectsCount: subjects.length,
         roomsCount: rooms.length,
-        schedulesCount: 0, // TODO: Add schedules tracking
+        schedulesCount: scheduleCount.count || 0,
         loading: false
       });
     } catch (error) {

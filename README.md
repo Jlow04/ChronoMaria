@@ -67,6 +67,7 @@ ChronoMaria/
 │   ├── genetic_algorithm.py  # GA implementation
 │   ├── server.py         # Flask API server
 │   └── requirements.txt
+├── run.py                # One-command startup script (backend + frontend + Python GA)
 └── README.md
 ```
 
@@ -133,6 +134,7 @@ pip install -r requirements.txt
    # Get these from your team lead
    SUPABASE_URL=https://your-project-id.supabase.co
    SUPABASE_ANON_KEY=your-anon-key-here
+   SUPABASE_SERVICE_ROLE_KEY=your-service-role-key-here
    
    DB_HOST=db.your-project-id.supabase.co
    DB_PORT=5432
@@ -143,6 +145,19 @@ pip install -r requirements.txt
 
    PYTHON_SERVICE_URL=http://localhost:8000
    ```
+
+### Step 4.1: Configure RLS Policies (Supabase)
+
+If Row Level Security (RLS) is enabled, you must add policies so the app can read/write records.
+
+1. Open your Supabase project SQL Editor
+2. Open and run the SQL from `backend/sql/rls_policies.sql`
+3. Re-run data import (optional, if your tables are empty):
+
+```bash
+cd backend
+node import-data.js
+```
 
 
 ### Step 5: Verify Setup
@@ -168,7 +183,26 @@ If you see errors, double-check your `.env` credentials with your team lead.
 
 ## 🎯 Running the Application
 
-You need to run **THREE services** simultaneously. Open **three separate terminal windows/tabs**:
+### Option A: One-Command Startup (Recommended)
+
+From the project root, run:
+
+```bash
+python run.py
+```
+
+This starts all three services together:
+- Backend: `http://localhost:5000`
+- Frontend: `http://localhost:3000`
+- Python GA Service: `http://localhost:8000`
+
+Press `Ctrl + C` in the same terminal to stop all services.
+
+---
+
+### Option B: Manual Startup (Three Terminals)
+
+You can still run **THREE services** manually in separate terminal windows/tabs:
 
 ### Terminal 1: Backend Server
 
@@ -207,6 +241,12 @@ VITE v5.x.x ready in xxx ms
 ```bash
 cd genetic_algorithm
 python server.py
+```
+
+If `python server.py` fails on Windows, run:
+
+```powershell
+c:/python314/python.exe server.py
 ```
 
 **Expected output:**
@@ -371,6 +411,15 @@ The system uses a genetic algorithm to optimize faculty schedules:
 - **Solution**: Ensure all three services are running
 - Check that you have added faculty, subjects, and rooms
 - Verify Python service is responding: http://localhost:8000/health
+
+**Problem:** `new row violates row-level security policy`
+- **Cause**: Supabase RLS is enabled but table policies do not allow your role to write
+- **Solution**:
+   ```bash
+   # In Supabase SQL Editor, run:
+   backend/sql/rls_policies.sql
+   ```
+   Then restart backend and try again.
 
 ### Windows PowerShell Script Execution Error
 

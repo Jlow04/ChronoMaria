@@ -9,6 +9,18 @@ const api = axios.create({
   },
 });
 
+// User Service
+export const userService = {
+  login: async (username, password) => {
+    const response = await api.post('/users/login', { username, password });
+    return response.data;
+  },
+  getAll: async () => {
+    const response = await api.get('/users');
+    return response.data;
+  },
+};
+
 // Faculty Service
 export const facultyService = {
   getAll: async () => {
@@ -83,6 +95,14 @@ export const roomService = {
 
 // Schedule Service
 export const scheduleService = {
+  count: async () => {
+    const response = await api.get('/schedule/count');
+    return response.data;
+  },
+  getMaster: async () => {
+    const response = await api.get('/schedule/master');
+    return response.data;
+  },
   generate: async (data) => {
     const response = await api.post('/schedule/generate', data);
     return response.data;
