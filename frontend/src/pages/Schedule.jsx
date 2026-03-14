@@ -73,7 +73,6 @@ function Schedule() {
   const [schedule, setSchedule] = useState(null);
   const [loading, setLoading] = useState(false);
   const [dataReady, setDataReady] = useState(false);
-  const [loadingMaster, setLoadingMaster] = useState(false);
   const [generatedAt, setGeneratedAt] = useState('');
   const [constraints, setConstraints] = useState({
     max_generations: 300,
@@ -99,56 +98,6 @@ function Schedule() {
       }
     } catch (error) {
       console.error('Error checking data:', error);
-    }
-  };
-
-  const loadMasterSchedule = async () => {
-    setLoadingMaster(true);
-    try {
-      const result = await scheduleService.getMaster();
-      if (!result?.items || result.items.length === 0) {
-        alert('No master schedule found in database yet.');
-        return;
-      }
-
-      const grouped = new Map();
-      for (const item of result.items) {
-        const key = `${item.subject?.id || 'none'}_${item.faculty?.id || 'none'}_${item.room?.id || 'none'}`;
-        if (!grouped.has(key)) {
-          grouped.set(key, {
-            id: key,
-            section: item.section || getSubjectSection(item.subject) || inferSectionLabel(getSubjectCourseNo(item.subject), item.subject?.department),
-            courseNo: getSubjectCourseNo(item.subject) || '-',
-            courseCode: getSubjectCode(item.subject) || '-',
-            title: item.subject?.name || 'Untitled Subject',
-            units: item.subject?.units || 3,
-            mwfSchedule: '-',
-            tthsSchedule: '-',
-            room: item.room?.room_number || 'TBA',
-            roomType: item.room?.type || 'Room',
-            faculty: item.faculty?.name || 'TBA',
-            department: item.faculty?.department || item.subject?.department || '-',
-          });
-        }
-
-        const row = grouped.get(key);
-        if ((!row.courseCode || row.courseCode === '-') && getSubjectCode(item.subject)) {
-          row.courseCode = getSubjectCode(item.subject);
-        }
-        if ((item.day_of_week || '').toUpperCase() === 'MWF') {
-          row.mwfSchedule = item.time_slot || '-';
-        } else if ((item.day_of_week || '').toUpperCase() === 'TTHS') {
-          row.tthsSchedule = item.time_slot || '-';
-        }
-      }
-
-      setSchedule(Array.from(grouped.values()));
-      setGeneratedAt(result.schedule?.created_at ? formatDateTimeStandard(new Date(result.schedule.created_at)) : formatDateTimeStandard(new Date()));
-    } catch (error) {
-      console.error('Error loading master schedule:', error);
-      alert(`Failed to load master schedule: ${error.response?.data?.details || error.message}`);
-    } finally {
-      setLoadingMaster(false);
     }
   };
 
@@ -276,12 +225,9 @@ function Schedule() {
           >
             {loading ? 'Generating...' : 'Generate Schedule'}
           </button>
-          <button className="btn btn-secondary print-btn" onClick={loadMasterSchedule} disabled={loadingMaster}>
-            {loadingMaster ? 'Loading...' : 'Load Master from DB'}
-          </button>
           {schedule && schedule.length > 0 && (
             <button className="btn btn-secondary print-btn" onClick={() => window.print()}>
-              Print Master List
+              Print Generated List
             </button>
           )}
         </div>
@@ -290,8 +236,7 @@ function Schedule() {
           <div className="card master-list-sheet">
             <div className="master-header">
               <p className="university-name">SAINT MARY'S UNIVERSITY</p>
-              <p className="office-name">OFFICE OF THE UNIVERSITY REGISTRAR</p>
-              <h2>MASTER LIST</h2>
+              <h2>GENERATED LIST</h2>
               <p className="meta">Date and Time Printed: {generatedAt || formatDateTimeStandard(new Date())}</p>
             </div>
 
@@ -326,11 +271,6 @@ function Schedule() {
                   ))}
                 </tbody>
               </table>
-            </div>
-
-            <div className="master-legend">
-              <span>Code Legend: 1=Block; 2=Reserved; None=Common; S=Special</span>
-              <span>* Laboratory Rooms</span>
             </div>
           </div>
         )}
