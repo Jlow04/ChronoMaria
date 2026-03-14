@@ -46,16 +46,24 @@ class GeneticAlgorithm:
 
         preferred = [self._normalize_token(item) for item in preferred_raw]
         subject_name = self._normalize_token(subject.get('name'))
-        subject_code = self._normalize_token(subject.get('code'))
+        subject_codes = [
+            self._normalize_token(subject.get('code')),
+            self._normalize_token(subject.get('CODE')),
+            self._normalize_token(subject.get('course_no')),
+            self._normalize_token(subject.get('Course_No.')),
+        ]
+        subject_codes = [code for code in subject_codes if code]
 
         for pref in preferred:
             if not pref:
                 continue
-            if pref == subject_code or pref == subject_name:
+            if pref == subject_name:
+                return True
+            if any(pref == code for code in subject_codes):
                 return True
             if subject_name and pref in subject_name:
                 return True
-            if subject_code and pref in subject_code:
+            if any(pref in code for code in subject_codes):
                 return True
 
         return False
@@ -207,7 +215,10 @@ class GeneticAlgorithm:
         - Room conflicts (same room, same time)
         - Faculty overload (too many units)
         """
-        fitness = 100.0
+        # Scale base score with problem size, then normalize back to 0-100.
+        # A fixed base of 100 is too small for larger schedules and gets clamped to 0.
+        base_fitness = 100.0 + (len(individual) * 20.0)
+        fitness = base_fitness
         
         # Check for time conflicts (faculty)
         faculty_schedule = {}
@@ -217,14 +228,14 @@ class GeneticAlgorithm:
             if strict_candidates:
                 allowed_ids = {member.get('id') for member in strict_candidates}
                 if gene.get('faculty_id') not in allowed_ids:
-                    # Hard constraint: invalid profession assignment when qualified faculty exists.
-                    return 0.0
+                    # Soft penalty: unqualified faculty assignment.
+                    fitness -= 50
 
                 preferred_exists = any(self._is_preferred_match(member, subject) for member in strict_candidates)
                 assigned = self.faculty_by_id.get(gene.get('faculty_id'), {})
                 if preferred_exists and not self._is_preferred_match(assigned, subject):
-                    # Hard preference rule: honor preferences when viable candidates exist.
-                    return 0.0
+                    # Soft penalty: non-preferred assignment.
+                    fitness -= 20
 
             key = f"{gene['faculty_id']}_{gene['day']}_{gene['time']}"
             if key in faculty_schedule:
@@ -262,8 +273,9 @@ class GeneticAlgorithm:
                 fitness -= 20
 
             # Penalize assignments outside stated faculty preferred subjects (if provided).
-            preferred = self._parse_preferred_subjects(faculty.get('preferred_subjects'))
-            if preferred and not self._is_preferred_match(faculty, subject):
+            strict_candidates = self._strict_faculty_candidates_for_subject(subject)
+            preferred_exists = any(self._is_preferred_match(member, subject) for member in strict_candidates)
+            if preferred_exists and not self._is_preferred_match(faculty, subject):
                 fitness -= 6
         
         # Penalize unbalanced workload
@@ -281,10 +293,12 @@ class GeneticAlgorithm:
                 # Hard-ish constraint: severe violation should invalidate.
                 overload = total_units - max_units
                 if overload >= 3:
-                    return 0.0
-                fitness -= overload * 8
+                    fitness -= overload * 15
+                else:
+                    fitness -= overload * 8
         
-        return max(0, fitness)
+        normalized = (fitness / base_fitness) * 100.0 if base_fitness > 0 else 0.0
+        return max(0.0, round(normalized, 2))
     
     def selection(self, population: List[List[Dict]], fitness_scores: List[float]) -> List[Dict]:
         """Tournament selection"""
@@ -332,6 +346,169 @@ class GeneticAlgorithm:
         
         return self._repair_individual(mutated)
     
+    def generate_report(self, individual: List[Dict], fitness: float, generations: int) -> Dict:
+        """Analyze the best schedule and return a detailed quality report."""
+        if not individual:
+            return {"error": "Empty schedule — nothing to report."}
+
+        # ── Faculty conflicts (same faculty, same day+time) ──────────────────
+        faculty_seen = {}
+        faculty_conflicts = []
+        for gene in individual:
+            key = f"{gene.get('faculty_id')}_{gene.get('day')}_{gene.get('time')}"
+            if key in faculty_seen:
+                faculty_conflicts.append({
+                    "faculty": gene.get('faculty'),
+                    "day": gene.get('day'),
+                    "time": gene.get('time'),
+                    "conflict_between": [faculty_seen[key], gene.get('subject')]
+                })
+            else:
+                faculty_seen[key] = gene.get('subject')
+
+        # ── Room conflicts (same room, same day+time) ─────────────────────────
+        room_seen = {}
+        room_conflicts = []
+        for gene in individual:
+            key = f"{gene.get('room_id')}_{gene.get('day')}_{gene.get('time')}"
+            if key in room_seen:
+                room_conflicts.append({
+                    "room": gene.get('room'),
+                    "day": gene.get('day'),
+                    "time": gene.get('time'),
+                    "conflict_between": [room_seen[key], gene.get('subject')]
+                })
+            else:
+                room_seen[key] = gene.get('subject')
+
+        # ── Department mismatches, unqualified & non-preferred assignments ─────
+        dept_mismatches = []
+        unqualified_assignments = []
+        non_preferred_assignments = []
+
+        for gene in individual:
+            subject = self.subject_by_id.get(gene.get('subject_id'), {})
+            faculty  = self.faculty_by_id.get(gene.get('faculty_id'), {})
+
+            f_dept = self._normalize_department(faculty.get('department'))
+            s_dept = self._normalize_department(subject.get('department'))
+            if f_dept and s_dept and f_dept != s_dept:
+                dept_mismatches.append({
+                    "subject": gene.get('subject'),
+                    "subject_dept": s_dept,
+                    "faculty": gene.get('faculty'),
+                    "faculty_dept": f_dept
+                })
+
+            strict = self._strict_faculty_candidates_for_subject(subject)
+            if strict:
+                allowed = {m.get('id') for m in strict}
+                if gene.get('faculty_id') not in allowed:
+                    unqualified_assignments.append({
+                        "subject": gene.get('subject'),
+                        "assigned_faculty": gene.get('faculty')
+                    })
+                else:
+                    preferred_exists = any(self._is_preferred_match(m, subject) for m in strict)
+                    if preferred_exists and not self._is_preferred_match(faculty, subject):
+                        non_preferred_assignments.append({
+                            "subject": gene.get('subject'),
+                            "assigned_faculty": gene.get('faculty')
+                        })
+
+        # ── Faculty workload ──────────────────────────────────────────────────
+        fac_units   = {}
+        fac_subjects = {}
+        for gene in individual:
+            fid     = gene.get('faculty_id')
+            subject = self.subject_by_id.get(gene.get('subject_id'), {})
+            units   = int(subject.get('units') or 0)
+            fac_units[fid]    = fac_units.get(fid, 0) + units
+            fac_subjects.setdefault(fid, []).append(gene.get('subject'))
+
+        workload = []
+        overloaded = []
+        for fid, units in fac_units.items():
+            fac      = self.faculty_by_id.get(fid, {})
+            max_u    = int(fac.get('max_units') or 18)
+            entry = {
+                "faculty":        fac.get('name', 'Unknown'),
+                "subjects_count": len(fac_subjects.get(fid, [])),
+                "total_units":    units,
+                "max_units":      max_u,
+                "status":         "OVERLOADED" if units > max_u else "OK"
+            }
+            workload.append(entry)
+            if units > max_u:
+                overloaded.append(entry)
+
+        # Workload balance
+        fac_load = {fid: len(subs) for fid, subs in fac_subjects.items()}
+        load_imbalance = (max(fac_load.values()) - min(fac_load.values())) > 3 if fac_load else False
+
+        # ── Penalty breakdown (mirrors calculate_fitness logic) ───────────────
+        pen_faculty    = len(faculty_conflicts)  * 10
+        pen_room       = len(room_conflicts)     * 10
+        pen_dept       = len(dept_mismatches)    * 20
+        pen_unqualified = len(unqualified_assignments) * 50
+        pen_nonpref    = len(non_preferred_assignments) * (20 + 6)
+        pen_overload   = sum(
+            (e['total_units'] - e['max_units']) * (15 if (e['total_units'] - e['max_units']) >= 3 else 8)
+            for e in overloaded
+        )
+        pen_imbalance  = 5 if load_imbalance else 0
+        total_penalty  = pen_faculty + pen_room + pen_dept + pen_unqualified + pen_nonpref + pen_overload + pen_imbalance
+        base_fitness   = 100.0 + len(individual) * 20.0
+
+        # ── Quality label ─────────────────────────────────────────────────────
+        if fitness >= 95:
+            quality = "Excellent"
+        elif fitness >= 80:
+            quality = "Good"
+        elif fitness >= 60:
+            quality = "Fair"
+        elif fitness >= 40:
+            quality = "Poor"
+        else:
+            quality = "Very Poor"
+
+        return {
+            "summary": {
+                "total_subjects":    len(individual),
+                "total_faculty_used": len(fac_units),
+                "generations_run":   generations,
+                "fitness_score":     fitness,
+                "quality":           quality
+            },
+            "conflicts": {
+                "faculty_conflicts":       faculty_conflicts,
+                "faculty_conflict_count":  len(faculty_conflicts),
+                "room_conflicts":          room_conflicts,
+                "room_conflict_count":     len(room_conflicts),
+                "dept_mismatches":         dept_mismatches,
+                "dept_mismatch_count":     len(dept_mismatches),
+                "unqualified_assignments": unqualified_assignments,
+                "unqualified_count":       len(unqualified_assignments),
+                "non_preferred":           non_preferred_assignments,
+                "non_preferred_count":     len(non_preferred_assignments),
+                "overloaded_faculty":      overloaded,
+                "overload_count":          len(overloaded),
+                "workload_imbalanced":     load_imbalance
+            },
+            "fitness_breakdown": {
+                "base_score":              base_fitness,
+                "total_penalty":           total_penalty,
+                "penalty_faculty_conflicts": pen_faculty,
+                "penalty_room_conflicts":  pen_room,
+                "penalty_dept_mismatches": pen_dept,
+                "penalty_unqualified":     pen_unqualified,
+                "penalty_non_preferred":   pen_nonpref,
+                "penalty_overload":        pen_overload,
+                "penalty_workload_imbalance": pen_imbalance
+            },
+            "faculty_workload": sorted(workload, key=lambda x: x['total_units'], reverse=True)
+        }
+
     def run(self) -> Tuple[List[Dict], float, int]:
         """Run the genetic algorithm"""
         # Handle empty data gracefully
