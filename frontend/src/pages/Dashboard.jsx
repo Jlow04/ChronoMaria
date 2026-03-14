@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import { facultyService, subjectService, roomService, scheduleService } from '../services/api';
 import './Dashboard.css';
@@ -47,46 +48,51 @@ function Dashboard() {
           <h1>Dashboard</h1>
           <p>Overview of the faculty loading system</p>
         </div>
-        
-        <div className="dashboard-grid">
-          <div className="card stat-card">
-            <h3>Total Faculty</h3>
-            <p className="stat-number">
-              {stats.loading ? '...' : stats.facultyCount}
-            </p>
-          </div>
-          <div className="card stat-card">
-            <h3>Total Subjects</h3>
-            <p className="stat-number">
-              {stats.loading ? '...' : stats.subjectsCount}
-            </p>
-          </div>
-          <div className="card stat-card">
-            <h3>Total Rooms</h3>
-            <p className="stat-number">
-              {stats.loading ? '...' : stats.roomsCount}
-            </p>
-          </div>
-          <div className="card stat-card">
-            <h3>Schedules Generated</h3>
-            <p className="stat-number">
-              {stats.loading ? '...' : stats.schedulesCount}
-            </p>
-          </div>
-        </div>
 
-        <div className="card">
-          <h2>Quick Stats</h2>
-          {stats.loading ? (
-            <p>Loading statistics...</p>
-          ) : (
-            <div style={{ padding: '10px 0' }}>
-              <p>✅ System is connected to database</p>
-              <p>✅ {stats.facultyCount} faculty members ready for scheduling</p>
-              <p>✅ {stats.subjectsCount} subjects available</p>
-              <p>✅ {stats.roomsCount} rooms available</p>
+        <div className="dashboard-bento">
+          <article className="bento-card stat-card">
+            <h3>Total Faculty</h3>
+            <p className="stat-number">{stats.loading ? '...' : stats.facultyCount}</p>
+          </article>
+
+          <article className="bento-card stat-card">
+            <h3>Total Subjects</h3>
+            <p className="stat-number">{stats.loading ? '...' : stats.subjectsCount}</p>
+          </article>
+
+          <article className="bento-card stat-card">
+            <h3>Total Rooms</h3>
+            <p className="stat-number">{stats.loading ? '...' : stats.roomsCount}</p>
+          </article>
+
+          <article className="bento-card stat-card">
+            <h3>Schedules Generated</h3>
+            <p className="stat-number">{stats.loading ? '...' : stats.schedulesCount}</p>
+          </article>
+
+          <article className="bento-card bento-overview">
+            <h2>Operations Overview</h2>
+            {stats.loading ? (
+              <p className="overview-note">Loading statistics...</p>
+            ) : (
+              <ul className="overview-list">
+                <li>System status: Connected and ready</li>
+                <li>{stats.facultyCount} faculty members available for assignment</li>
+                <li>{stats.subjectsCount} active subjects in the offering pool</li>
+                <li>{stats.roomsCount} rooms available for scheduling</li>
+              </ul>
+            )}
+          </article>
+
+          <article className="bento-card bento-links">
+            <h2>Quick Actions</h2>
+            <div className="bento-link-group">
+              <Link to="/faculty" className="bento-link">Manage Faculty</Link>
+              <Link to="/subjects" className="bento-link">Manage Subjects</Link>
+              <Link to="/rooms" className="bento-link">Manage Rooms</Link>
+              <Link to="/schedule" className="bento-link">Generate Schedules</Link>
             </div>
-          )}
+          </article>
         </div>
       </div>
     </div>

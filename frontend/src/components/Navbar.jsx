@@ -1,20 +1,21 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, NavLink } from 'react-router-dom';
+import logoNoBg from '../assets/LogoNoBg.png';
 
 function Navbar() {
   return (
     <nav className="navbar">
       <Link to="/dashboard" className="navbar-brand">
-        ChronoMaria
+        <img src={logoNoBg} alt="ChronoMaria" className="navbar-logo" />
       </Link>
       <ul className="navbar-nav">
-        <li><Link to="/dashboard">Dashboard</Link></li>
-        <li><Link to="/faculty">Faculty</Link></li>
-        <li><Link to="/subjects">Subjects</Link></li>
-        <li><Link to="/rooms">Rooms</Link></li>
-        <li><Link to="/schedule">Schedule</Link></li>
-        <li><Link to="/login">Logout</Link></li>
+        <li><NavLink to="/dashboard" className={({ isActive }) => `navbar-link ${isActive ? 'active' : ''}`}>Dashboard</NavLink></li>
+        <li><NavLink to="/faculty" className={({ isActive }) => `navbar-link ${isActive ? 'active' : ''}`}>Faculty</NavLink></li>
+        <li><NavLink to="/subjects" className={({ isActive }) => `navbar-link ${isActive ? 'active' : ''}`}>Subjects</NavLink></li>
+        <li><NavLink to="/rooms" className={({ isActive }) => `navbar-link ${isActive ? 'active' : ''}`}>Rooms</NavLink></li>
+        <li><NavLink to="/schedule" className={({ isActive }) => `navbar-link ${isActive ? 'active' : ''}`}>Schedule</NavLink></li>
       </ul>
+      <NavLink to="/login" className="navbar-logout">Logout</NavLink>
     </nav>
   );
 }

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { userService } from '../services/api';
 import './Login.css';
+import logoNoBg from '../assets/LogoNoBg.png';
 
 function Login() {
   const [credentials, setCredentials] = useState({
@@ -41,7 +42,7 @@ function Login() {
     <div className="login-container">
       <div className="login-card">
         <div className="login-header">
-          <h1>ChronoMaria</h1>
+          <img src={logoNoBg} alt="ChronoMaria" className="login-logo" />
           <p>Faculty Loading Automation System</p>
         </div>
         {error && <div className="error-message">{error}</div>}
