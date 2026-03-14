@@ -11,12 +11,14 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
 // Import routes
+const userRoutes = require('./routes/userRoutes');
 const facultyRoutes = require('./routes/facultyRoutes');
 const subjectRoutes = require('./routes/subjectRoutes');
 const roomRoutes = require('./routes/roomRoutes');
 const scheduleRoutes = require('./routes/scheduleRoutes');
 
 // API Routes
+app.use('/api/users', userRoutes);
 app.use('/api/faculty', facultyRoutes);
 app.use('/api/subjects', subjectRoutes);
 app.use('/api/rooms', roomRoutes);
