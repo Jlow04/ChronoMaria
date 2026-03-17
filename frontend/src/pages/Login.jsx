@@ -25,7 +25,6 @@ function Login() {
         credentials.password
       );
       
-      console.log('Login successful:', response);
       // TODO: Store user info in localStorage/context
       localStorage.setItem('user', JSON.stringify(response.user));
       navigate('/dashboard');
@@ -51,6 +50,7 @@ function Login() {
             <label>Username</label>
             <input
               type="text"
+              autoComplete="username"
               value={credentials.username}
               onChange={(e) => setCredentials({ ...credentials, username: e.target.value })}
               required
@@ -62,6 +62,7 @@ function Login() {
             <div className="password-input-wrapper">
               <input
                 type={showPassword ? 'text' : 'password'}
+                autoComplete="current-password"
                 value={credentials.password}
                 onChange={(e) => setCredentials({ ...credentials, password: e.target.value })}
                 required

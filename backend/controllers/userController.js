@@ -48,7 +48,6 @@ exports.login = async (req, res) => {
         details: `User logged in to their account`,
         created_at: new Date().toISOString()
       });
-      console.log(`✅ Audit log created for login - User: ${username}`, auditResult);
     } catch (auditError) {
       console.error(`❌ Failed to log login audit event for user ${username}:`, auditError);
     }
