@@ -81,9 +81,15 @@
   box-shadow: 0 4px 10px rgba(60, 112, 181, 0.18);
 }
 
+.navbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  justify-self: end;
+}
+
 .navbar-logout {
   text-decoration: none;
-  justify-self: end;
   color: #0f3d7a;
   font-weight: 700;
   font-size: 14px;
@@ -180,7 +186,7 @@
   }
 
   .navbar-brand,
-  .navbar-logout {
+  .navbar-actions {
     order: 1;
   }
 

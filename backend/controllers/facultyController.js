@@ -2,7 +2,13 @@ const Faculty = require('../models/Faculty');
 
 exports.getAllFaculty = async (req, res) => {
   try {
-    const faculty = await Faculty.getAll();
+    const {
+      search = '',
+      sortBy = 'id',
+      sortOrder = 'asc'
+    } = req.query;
+
+    const faculty = await Faculty.getAll({ search, sortBy, sortOrder });
     res.json(faculty);
   } catch (error) {
     res.status(500).json({ error: error.message });

@@ -19,12 +19,24 @@ export const userService = {
     const response = await api.get('/users');
     return response.data;
   },
+  create: async (username, password, email, currentUsername) => {
+    const response = await api.post('/users', { username, password, email, admin_username: currentUsername });
+    return response.data;
+  },
+  update: async (id, role, is_active, currentUsername) => {
+    const response = await api.put(`/users/${id}`, { role, is_active, admin_username: currentUsername });
+    return response.data;
+  },
+  delete: async (id, currentUsername) => {
+    const response = await api.delete(`/users/${id}`, { data: { admin_username: currentUsername } });
+    return response.data;
+  },
 };
 
 // Faculty Service
 export const facultyService = {
-  getAll: async () => {
-    const response = await api.get('/faculty');
+  getAll: async (params = {}) => {
+    const response = await api.get('/faculty', { params });
     return response.data;
   },
   getById: async (id) => {
@@ -109,6 +121,18 @@ export const scheduleService = {
   },
   validate: async (schedule) => {
     const response = await api.post('/schedule/validate', { schedule });
+    return response.data;
+  },
+};
+
+// Audit Log Service
+export const auditLogService = {
+  getAll: async () => {
+    const response = await api.get('/audit-logs');
+    return response.data;
+  },
+  getByAction: async (action) => {
+    const response = await api.get(`/audit-logs/action/${action}`);
     return response.data;
   },
 };
