@@ -35,8 +35,8 @@ export const userService = {
 
 // Faculty Service
 export const facultyService = {
-  getAll: async () => {
-    const response = await api.get('/faculty');
+  getAll: async (params = {}) => {
+    const response = await api.get('/faculty', { params });
     return response.data;
   },
   getById: async (id) => {

@@ -1,11 +1,29 @@
 const supabase = require('../config/database');
 
 class Faculty {
-  static async getAll() {
-    const { data, error } = await supabase
+  static async getAll(options = {}) {
+    const {
+      search = '',
+      sortBy = 'id',
+      sortOrder = 'asc'
+    } = options;
+
+    const allowedSortFields = ['id', 'name', 'email', 'department', 'max_units'];
+    const orderColumn = allowedSortFields.includes(sortBy) ? sortBy : 'id';
+    const ascending = sortOrder !== 'desc';
+
+    let query = supabase
       .from('faculty')
-      .select('*')
-      .order('id');
+      .select('*');
+
+    if (search && search.trim()) {
+      const term = search.trim();
+      query = query.or(`name.ilike.%${term}%,email.ilike.%${term}%,department.ilike.%${term}%`);
+    }
+
+    const { data, error } = await query
+      .order(orderColumn, { ascending })
+      .order('id', { ascending: true });
     
     if (error) throw error;
     return data;
