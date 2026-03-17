@@ -39,6 +39,20 @@ exports.login = async (req, res) => {
     // Don't return password_hash
     const { password_hash: _, ...userWithoutPassword } = user;
 
+    // Log audit event for login
+    try {
+      const auditResult = await AuditLog.create({
+        admin_username: username,
+        action: 'USER_LOGIN',
+        target_username: username,
+        details: `User logged in to their account`,
+        created_at: new Date().toISOString()
+      });
+      console.log(`✅ Audit log created for login - User: ${username}`, auditResult);
+    } catch (auditError) {
+      console.error(`❌ Failed to log login audit event for user ${username}:`, auditError);
+    }
+
     res.json({
       message: 'Login successful',
       user: userWithoutPassword

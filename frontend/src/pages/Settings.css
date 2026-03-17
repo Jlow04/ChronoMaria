@@ -797,3 +797,52 @@
     padding: 10px;
   }
 }
+
+/* Password Input Wrapper */
+.password-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.password-input-wrapper input {
+  width: 100%;
+  padding-right: 40px;
+}
+
+.password-toggle {
+  position: absolute;
+  right: 12px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #667eea;
+  transition: color 0.2s;
+  width: 32px;
+  height: 32px;
+}
+
+.password-toggle svg {
+  width: 20px;
+  height: 20px;
+}
+
+.password-toggle:hover {
+  color: #764ba2;
+}
+
+.password-toggle:active {
+  transform: scale(0.95);
+}
+
+/* Password Mismatch Error */
+.error-message {
+  font-size: 13px;
+  color: #dc3545;
+  margin-top: 4px;
+  font-weight: 500;
+}
