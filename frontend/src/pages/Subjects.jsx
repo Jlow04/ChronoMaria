@@ -22,6 +22,7 @@ function Subjects() {
   const [departmentFilter, setDepartmentFilter] = useState('all');
   const [sortKey, setSortKey] = useState('name');
   const [sortDirection, setSortDirection] = useState('asc');
+  const [showDepartmentPicker, setShowDepartmentPicker] = useState(false);
 
   useEffect(() => {
     loadSubjects();
@@ -44,6 +45,10 @@ function Subjects() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    if (!String(currentSubject.department || '').trim()) {
+      setError('Please choose one department before saving.');
+      return;
+    }
     try {
       if (currentSubject.id) {
         await subjectService.update(currentSubject.id, currentSubject);
@@ -52,6 +57,7 @@ function Subjects() {
       }
       setShowModal(false);
       setCurrentSubject(emptySubject);
+      setShowDepartmentPicker(false);
       loadSubjects();
     } catch (error) {
       console.error('Error saving subject:', error);
@@ -61,6 +67,7 @@ function Subjects() {
 
   const handleEdit = (item) => {
     setCurrentSubject(item);
+    setShowDepartmentPicker(false);
     setShowModal(true);
   };
 
@@ -114,6 +121,15 @@ function Subjects() {
   const resetSubjectModal = () => {
     setShowModal(false);
     setCurrentSubject(emptySubject);
+    setShowDepartmentPicker(false);
+  };
+
+  const selectDepartment = (department) => {
+    setCurrentSubject((prev) => ({
+      ...prev,
+      department,
+    }));
+    setShowDepartmentPicker(false);
   };
 
   return (
@@ -297,12 +313,13 @@ function Subjects() {
                 </div>
                 <div className="form-group">
                   <label>Department</label>
-                  <input
-                    type="text"
-                    value={currentSubject.department}
-                    onChange={(e) => setCurrentSubject({ ...currentSubject, department: e.target.value })}
-                    required
-                  />
+                  <button
+                    type="button"
+                    className="subjects-department-picker-btn"
+                    onClick={() => setShowDepartmentPicker(true)}
+                  >
+                    {currentSubject.department || 'Choose department'}
+                  </button>
                 </div>
                 <div className="modal-footer">
                   <button type="button" className="btn btn-secondary" onClick={resetSubjectModal}>
@@ -311,6 +328,44 @@ function Subjects() {
                   <button type="submit" className="btn btn-primary">Save</button>
                 </div>
               </form>
+            </div>
+          </div>
+        )}
+
+        {showModal && showDepartmentPicker && (
+          <div className="modal-overlay" onClick={() => setShowDepartmentPicker(false)}>
+            <div className="modal-content subjects-department-picker-modal" onClick={(e) => e.stopPropagation()}>
+              <div className="modal-header">
+                <h2>Choose Department</h2>
+              </div>
+              <div className="subjects-department-picker-body">
+                {departments.length === 0 ? (
+                  <p className="subjects-department-empty">No departments available yet.</p>
+                ) : (
+                  <div className="subjects-department-picker-list">
+                    {departments.map((department) => (
+                      <label key={department} className="subjects-department-option">
+                        <input
+                          type="checkbox"
+                          checked={currentSubject.department === department}
+                          onChange={() => selectDepartment(department)}
+                        />
+                        <span className="subjects-department-option-content">
+                          <span>{department}</span>
+                          {currentSubject.department === department && (
+                            <span className="subjects-department-option-check" aria-hidden="true">✓</span>
+                          )}
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+                )}
+              </div>
+              <div className="modal-footer">
+                <button type="button" className="btn btn-primary" onClick={() => setShowDepartmentPicker(false)}>
+                  Done
+                </button>
+              </div>
             </div>
           </div>
         )}

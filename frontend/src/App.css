@@ -34,6 +34,14 @@
   box-shadow: 0 8px 16px rgba(58, 109, 178, 0.2);
   width: fit-content;
   height: fit-content;
+  transition:
+    padding 0.22s ease,
+    width 0.22s ease,
+    height 0.22s ease,
+    transform 0.16s ease,
+    box-shadow 0.16s ease,
+    opacity 0.22s ease,
+    filter 0.22s ease;
 }
 
 .sidebar-toggle:hover,
@@ -94,7 +102,7 @@
   -webkit-backdrop-filter: blur(12px);
   padding: 18px 14px;
   overflow: hidden;
-  transition: width 0.22s ease, transform 0.22s ease, opacity 0.2s ease;
+  transition: width 0.22s ease, transform 0.22s ease, opacity 0.2s ease, filter 0.22s ease;
 }
 
 .nav-island.closed {
@@ -189,6 +197,26 @@
   top: 18px;
   right: 20px;
   z-index: 1201;
+  transition: opacity 0.22s ease, filter 0.22s ease, transform 0.22s ease;
+}
+
+/* Global floating-window behavior: hide nav controls when any modal/overlay is open */
+body:has(.modal) .sidebar-toggle,
+body:has(.modal-overlay) .sidebar-toggle,
+body:has(.modal) .top-right-logout,
+body:has(.modal-overlay) .top-right-logout,
+body:has(.modal) .nav-island,
+body:has(.modal-overlay) .nav-island {
+  opacity: 0;
+  filter: blur(4px);
+  pointer-events: none;
+}
+
+body:has(.modal) .sidebar-toggle,
+body:has(.modal-overlay) .sidebar-toggle,
+body:has(.modal) .top-right-logout,
+body:has(.modal-overlay) .top-right-logout {
+  transform: translateY(-4px) scale(0.98);
 }
 
 .navbar-logout {

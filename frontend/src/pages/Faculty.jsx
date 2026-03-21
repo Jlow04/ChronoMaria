@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { FaBuilding, FaChalkboardTeacher, FaStar } from 'react-icons/fa';
 import Navbar from '../components/Navbar';
-import { facultyService } from '../services/api';
+import { facultyService, subjectService } from '../services/api';
 import './Faculty.css';
 
 const emptyFaculty = {
@@ -9,11 +9,12 @@ const emptyFaculty = {
   email: '',
   department: '',
   max_units: '',
-  preferred_subjects: ''
+  preferred_subjects: []
 };
 
 function Faculty() {
   const [faculty, setFaculty] = useState([]);
+  const [subjects, setSubjects] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [showModal, setShowModal] = useState(false);
@@ -22,17 +23,36 @@ function Faculty() {
   const [departmentFilter, setDepartmentFilter] = useState('all');
   const [sortKey, setSortKey] = useState('name');
   const [sortDirection, setSortDirection] = useState('asc');
+  const [showSubjectPicker, setShowSubjectPicker] = useState(false);
+  const [showDepartmentPicker, setShowDepartmentPicker] = useState(false);
 
   useEffect(() => {
     loadFaculty();
+    loadSubjects();
   }, []);
+
+  const loadSubjects = async () => {
+    try {
+      const data = await subjectService.getAll();
+      setSubjects(data);
+    } catch (error) {
+      console.error('Error loading subjects:', error);
+    }
+  };
 
   const loadFaculty = async () => {
     setLoading(true);
     setError('');
     try {
       const data = await facultyService.getAll();
-      setFaculty(data);
+      // Parse preferred_subjects from JSON string to array if needed
+      const parsedData = data.map(item => ({
+        ...item,
+        preferred_subjects: typeof item.preferred_subjects === 'string' && item.preferred_subjects.trim()
+          ? item.preferred_subjects.split(',').map(s => s.trim()).filter(Boolean)
+          : Array.isArray(item.preferred_subjects) ? item.preferred_subjects : []
+      }));
+      setFaculty(parsedData);
     } catch (error) {
       console.error('Error loading faculty:', error);
       setError('Unable to load faculty right now. Please try again.');
@@ -41,17 +61,62 @@ function Faculty() {
     }
   };
 
+  const normalizeText = (value) => String(value || '').trim().toLowerCase();
+
+  const availableSubjects = useMemo(() => {
+    const facultyDepartment = normalizeText(currentFaculty.department);
+    if (!facultyDepartment) {
+      return [];
+    }
+
+    return subjects.filter((subject) => {
+      const subjectDepartment = normalizeText(subject.department);
+      const isDepartmentMatch = subjectDepartment === facultyDepartment;
+      const isCommonSubject = /common/.test(subjectDepartment);
+      return isDepartmentMatch || isCommonSubject;
+    });
+  }, [subjects, currentFaculty.department]);
+
+  const toggleSubjectSelection = (subjectId) => {
+    const normalizedId = String(subjectId);
+    setCurrentFaculty(prev => {
+      const current = Array.isArray(prev.preferred_subjects) ? prev.preferred_subjects : [];
+      const isSelected = current.includes(normalizedId);
+      
+      return {
+        ...prev,
+        preferred_subjects: isSelected
+          ? current.filter(id => id !== normalizedId)
+          : [...current, normalizedId]
+      };
+    });
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    if (!String(currentFaculty.department || '').trim()) {
+      setError('Please choose one department before saving.');
+      return;
+    }
     try {
+      const dataToSubmit = {
+        ...currentFaculty,
+        // Convert array to comma-separated string for storage
+        preferred_subjects: Array.isArray(currentFaculty.preferred_subjects) 
+          ? currentFaculty.preferred_subjects.join(',')
+          : currentFaculty.preferred_subjects
+      };
+
       if (currentFaculty.id) {
-        await facultyService.update(currentFaculty.id, currentFaculty);
+        await facultyService.update(currentFaculty.id, dataToSubmit);
       } else {
-        await facultyService.create(currentFaculty);
+        await facultyService.create(dataToSubmit);
       }
       setShowModal(false);
       setCurrentFaculty(emptyFaculty);
+      setShowDepartmentPicker(false);
+      setShowSubjectPicker(false);
       loadFaculty();
     } catch (error) {
       console.error('Error saving faculty:', error);
@@ -60,7 +125,16 @@ function Faculty() {
   };
 
   const handleEdit = (item) => {
-    setCurrentFaculty(item);
+    // Parse preferred_subjects as array when editing
+    const parsed = {
+      ...item,
+      preferred_subjects: typeof item.preferred_subjects === 'string' && item.preferred_subjects.trim()
+        ? item.preferred_subjects.split(',').map(s => s.trim()).filter(Boolean)
+        : Array.isArray(item.preferred_subjects) ? item.preferred_subjects : []
+    };
+    setCurrentFaculty(parsed);
+    setShowDepartmentPicker(false);
+    setShowSubjectPicker(false);
     setShowModal(true);
   };
 
@@ -81,6 +155,12 @@ function Faculty() {
     return Array.from(new Set(faculty.map((item) => String(item.department || '').trim()).filter(Boolean))).sort((a, b) => a.localeCompare(b));
   }, [faculty]);
 
+  const departmentOptions = useMemo(() => {
+    const fromFaculty = faculty.map((item) => String(item.department || '').trim()).filter(Boolean);
+    const fromSubjects = subjects.map((item) => String(item.department || '').trim()).filter(Boolean);
+    return Array.from(new Set([...fromFaculty, ...fromSubjects])).sort((a, b) => a.localeCompare(b));
+  }, [faculty, subjects]);
+
   const averageMaxUnits = useMemo(() => {
     if (faculty.length === 0) {
       return 0;
@@ -90,7 +170,10 @@ function Faculty() {
   }, [faculty]);
 
   const withPreferencesCount = useMemo(() => {
-    return faculty.filter((item) => String(item.preferred_subjects || '').trim().length > 0).length;
+    return faculty.filter((item) => {
+      const prefs = item.preferred_subjects;
+      return Array.isArray(prefs) ? prefs.length > 0 : String(prefs || '').trim().length > 0;
+    }).length;
   }, [faculty]);
 
   const filteredFaculty = useMemo(() => {
@@ -123,10 +206,30 @@ function Faculty() {
   const resetFacultyModal = () => {
     setShowModal(false);
     setCurrentFaculty(emptyFaculty);
+    setShowSubjectPicker(false);
+    setShowDepartmentPicker(false);
   };
 
+  const selectDepartment = (department) => {
+    setCurrentFaculty((prev) => ({
+      ...prev,
+      department,
+      preferred_subjects: prev.department === department ? prev.preferred_subjects : [],
+    }));
+    setShowDepartmentPicker(false);
+    setShowSubjectPicker(false);
+  };
+
+  const selectedSubjectLabels = useMemo(() => {
+    const selectedIds = Array.isArray(currentFaculty.preferred_subjects) ? currentFaculty.preferred_subjects : [];
+    return selectedIds
+      .map((id) => subjects.find((subject) => String(subject.id) === String(id)))
+      .filter(Boolean)
+      .map((subject) => `${subject.code} - ${subject.name}`);
+  }, [currentFaculty.preferred_subjects, subjects]);
+
   return (
-    <div className="app">
+    <div className={`app ${showSubjectPicker ? 'subject-picker-open' : ''}`}>
       <Navbar />
       <div className="container page-content">
         <div className="page-header">
@@ -232,28 +335,30 @@ function Faculty() {
                 </tr>
               </thead>
               <tbody>
-                {loading ? (
-                  <tr>
-                    <td colSpan="5" className="faculty-empty-cell">Loading faculty...</td>
-                  </tr>
-                ) : filteredFaculty.length === 0 ? (
-                  <tr>
-                    <td colSpan="5" className="faculty-empty-cell">No faculty match your current filters.</td>
-                  </tr>
-                ) : (
-                  filteredFaculty.map((item) => (
-                    <tr key={item.id}>
-                      <td>{item.name}</td>
-                      <td>{item.email}</td>
-                      <td>{item.department}</td>
-                      <td>{item.max_units}</td>
-                      <td className="faculty-actions-cell">
-                        <button className="btn btn-secondary" onClick={() => handleEdit(item)}>Edit</button>
-                        <button className="btn btn-danger" onClick={() => handleDelete(item.id)}>Delete</button>
-                      </td>
+                  {loading ? (
+                    <tr>
+                        <td colSpan="5" className="faculty-empty-cell">Loading faculty...</td>
                     </tr>
-                  ))
-                )}
+                  ) : (
+                      filteredFaculty.length === 0 ? (
+                        <tr>
+                          <td colSpan="5" className="faculty-empty-cell">No faculty match your current filters.</td>
+                        </tr>
+                      ) : (
+                      filteredFaculty.map(item => (
+                          <tr key={item.id}>
+                            <td>{item.name}</td>
+                            <td>{item.email}</td>
+                            <td>{item.department}</td>
+                            <td>{item.max_units}</td>
+                            <td className="faculty-actions-cell">
+                              <button className="btn btn-secondary" onClick={() => handleEdit(item)}>Edit</button>
+                              <button className="btn btn-danger" onClick={() => handleDelete(item.id)}>Delete</button>
+                            </td>
+                          </tr>
+                    ))
+                      )
+                    )}
               </tbody>
             </table>
           </div>
@@ -286,12 +391,13 @@ function Faculty() {
                 </div>
                 <div className="form-group">
                   <label>Department</label>
-                  <input
-                    type="text"
-                    value={currentFaculty.department}
-                    onChange={(e) => setCurrentFaculty({ ...currentFaculty, department: e.target.value })}
-                    required
-                  />
+                  <button
+                    type="button"
+                    className="faculty-subjects-picker-btn"
+                    onClick={() => setShowDepartmentPicker(true)}
+                  >
+                    {currentFaculty.department || 'Choose department'}
+                  </button>
                 </div>
                 <div className="form-group">
                   <label>Max Units</label>
@@ -304,11 +410,26 @@ function Faculty() {
                 </div>
                 <div className="form-group">
                   <label>Preferred Subjects</label>
-                  <input
-                    type="text"
-                    value={currentFaculty.preferred_subjects}
-                    onChange={(e) => setCurrentFaculty({ ...currentFaculty, preferred_subjects: e.target.value })}
-                  />
+                  <button
+                    type="button"
+                    className="faculty-subjects-picker-btn"
+                    onClick={() => setShowSubjectPicker(true)}
+                    disabled={!currentFaculty.department}
+                  >
+                    {selectedSubjectLabels.length > 0
+                      ? `${selectedSubjectLabels.length} subject(s) selected`
+                      : 'Choose preferred subjects'}
+                  </button>
+                  {!currentFaculty.department && (
+                    <p className="faculty-subjects-hint">Select a department first to load subject choices.</p>
+                  )}
+                  {selectedSubjectLabels.length > 0 && (
+                    <div className="faculty-selected-subjects">
+                      {selectedSubjectLabels.map((label) => (
+                        <span key={label} className="faculty-subject-tag">{label}</span>
+                      ))}
+                    </div>
+                  )}
                 </div>
                 <div className="modal-footer">
                   <button type="button" className="btn btn-secondary" onClick={resetFacultyModal}>
@@ -317,6 +438,80 @@ function Faculty() {
                   <button type="submit" className="btn btn-primary">Save</button>
                 </div>
               </form>
+            </div>
+          </div>
+        )}
+
+        {showModal && showSubjectPicker && (
+          <div className="modal-overlay" onClick={() => setShowSubjectPicker(false)}>
+            <div className="modal-content faculty-subjects-picker-modal" onClick={(e) => e.stopPropagation()}>
+              <div className="modal-header">
+                <h2>Preferred Subjects</h2>
+              </div>
+              <div className="faculty-subjects-picker-body">
+                <p className="faculty-subjects-hint">
+                  Available subjects for <strong>{currentFaculty.department}</strong> (including common subjects):
+                </p>
+                {availableSubjects.length === 0 ? (
+                  <p className="faculty-subjects-empty">No matching subjects found.</p>
+                ) : (
+                  <div className="faculty-subjects-picker-list">
+                    {availableSubjects.map((subject) => (
+                      <label key={subject.id} className="faculty-subject-option">
+                        <input
+                          type="checkbox"
+                          checked={Array.isArray(currentFaculty.preferred_subjects) && currentFaculty.preferred_subjects.includes(String(subject.id))}
+                          onChange={() => toggleSubjectSelection(subject.id)}
+                        />
+                        <span>{subject.code} - {subject.name}</span>
+                      </label>
+                    ))}
+                  </div>
+                )}
+              </div>
+              <div className="modal-footer">
+                <button type="button" className="btn btn-primary" onClick={() => setShowSubjectPicker(false)}>
+                  Done
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {showModal && showDepartmentPicker && (
+          <div className="modal-overlay" onClick={() => setShowDepartmentPicker(false)}>
+            <div className="modal-content faculty-subjects-picker-modal" onClick={(e) => e.stopPropagation()}>
+              <div className="modal-header">
+                <h2>Choose Department</h2>
+              </div>
+              <div className="faculty-subjects-picker-body">
+                {departmentOptions.length === 0 ? (
+                  <p className="faculty-subjects-empty">No departments available yet.</p>
+                ) : (
+                  <div className="faculty-subjects-picker-list">
+                    {departmentOptions.map((department) => (
+                      <label key={department} className="faculty-subject-option">
+                        <input
+                          type="checkbox"
+                          checked={currentFaculty.department === department}
+                          onChange={() => selectDepartment(department)}
+                        />
+                        <span className="faculty-department-option-content">
+                          <span>{department}</span>
+                          {currentFaculty.department === department && (
+                            <span className="faculty-department-option-check" aria-hidden="true">✓</span>
+                          )}
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+                )}
+              </div>
+              <div className="modal-footer">
+                <button type="button" className="btn btn-primary" onClick={() => setShowDepartmentPicker(false)}>
+                  Done
+                </button>
+              </div>
             </div>
           </div>
         )}
