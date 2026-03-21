@@ -1,7 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import Navbar from '../components/Navbar';
 import { scheduleService, facultyService, subjectService, roomService } from '../services/api';
+import { getScheduleSettings } from '../services/scheduleSettings';
+import { FaChalkboardTeacher, FaBookOpen, FaDoorOpen, FaTachometerAlt, FaRandom, FaClock, FaUsers } from 'react-icons/fa';
+import { FaWandMagicSparkles, FaBolt } from 'react-icons/fa6';
+import { FaHistory } from 'react-icons/fa';
 import './Schedule.css';
+
+const LAST_SCHEDULE_RUN_KEY = 'scheduleLastRun';
 
 const formatDateTimeStandard = (date) => new Intl.DateTimeFormat('en-US', {
   year: 'numeric',
@@ -188,15 +194,23 @@ function Schedule() {
   const [generations, setGenerations] = useState(null);
   const [loading, setLoading] = useState(false);
   const [dataReady, setDataReady] = useState(false);
+  const [dataCounts, setDataCounts] = useState({ faculty: 0, subjects: 0, rooms: 0 });
   const [generatedAt, setGeneratedAt] = useState('');
-  const [constraints, setConstraints] = useState({
-    max_generations: 300,
-    population_size: 60,
-    mutation_rate: 0.1,
-    max_runtime_seconds: 20
-  });
+  const [constraints, setConstraints] = useState(getScheduleSettings());
+  const [lastRunSummary, setLastRunSummary] = useState(null);
 
   useEffect(() => {
+    setConstraints(getScheduleSettings());
+
+    const rawLastRun = localStorage.getItem(LAST_SCHEDULE_RUN_KEY);
+    if (rawLastRun) {
+      try {
+        setLastRunSummary(JSON.parse(rawLastRun));
+      } catch (_error) {
+        setLastRunSummary(null);
+      }
+    }
+
     checkData();
   }, []);
 
@@ -207,10 +221,16 @@ function Schedule() {
         subjectService.getAll(),
         roomService.getAll()
       ]);
+
+      const counts = {
+        faculty: faculty.length,
+        subjects: subjects.length,
+        rooms: rooms.length,
+      };
+
+      setDataCounts(counts);
       
-      if (faculty.length > 0 && subjects.length > 0 && rooms.length > 0) {
-        setDataReady(true);
-      }
+      setDataReady(counts.faculty > 0 && counts.subjects > 0 && counts.rooms > 0);
     } catch (error) {
       console.error('Error checking data:', error);
     }
@@ -270,7 +290,19 @@ function Schedule() {
       setFitness(result.fitness ?? null);
       setGenerations(result.generations ?? null);
       setReport(result.report || null);
-      setGeneratedAt(formatDateTimeStandard(new Date()));
+      const generatedTimestamp = formatDateTimeStandard(new Date());
+      setGeneratedAt(generatedTimestamp);
+
+      const summary = {
+        generatedAt: generatedTimestamp,
+        quality: result.report?.summary?.quality || 'N/A',
+        fitness: result.fitness ?? null,
+        generations: result.generations ?? null,
+        subjectCount: (result.schedule || []).length,
+      };
+      setLastRunSummary(summary);
+      localStorage.setItem(LAST_SCHEDULE_RUN_KEY, JSON.stringify(summary));
+
       alert(`Schedule generated successfully!\nFitness: ${result.fitness}\nQuality: ${result.report?.summary?.quality || 'N/A'}\nGenerations: ${result.generations}`);
     } catch (error) {
       console.error('Error generating schedule:', error);
@@ -290,52 +322,71 @@ function Schedule() {
         </div>
 
         <div className="card">
-          <h2>Genetic Algorithm Parameters</h2>
+          <h2>Generation Controls</h2>
           {!dataReady && (
-            <div style={{ background: '#fff3cd', padding: '10px', marginBottom: '15px', borderRadius: '4px', color: '#856404' }}>
-              ⚠️ Please add faculty, subjects, and rooms before generating a schedule.
+            <div className="schedule-warning">
+              Please add faculty, subjects, and rooms before generating a schedule.
             </div>
           )}
           {dataReady && (
-            <div style={{ background: '#d4edda', padding: '10px', marginBottom: '15px', borderRadius: '4px', color: '#155724' }}>
-              ✅ Data ready! You can now generate schedules.
+            <div className="schedule-ready">
+              Data ready. You can now generate schedules.
             </div>
           )}
-          <div className="form-group">
-            <label>Max Generations</label>
-            <input
-              type="number"
-              value={constraints.max_generations}
-              onChange={(e) => setConstraints({ ...constraints, max_generations: parseInt(e.target.value) })}
-            />
+
+          <div className="schedule-dashboard-grid">
+            <article className="schedule-mini-card">
+              <div className="schedule-mini-head">
+                <div className="schedule-mini-icon"><FaChalkboardTeacher /></div>
+                <div>
+                  <p className="schedule-mini-label">Faculty Loaded</p>
+                  <h3>{dataCounts.faculty}</h3>
+                </div>
+              </div>
+            </article>
+            <article className="schedule-mini-card">
+              <div className="schedule-mini-head">
+                <div className="schedule-mini-icon"><FaBookOpen /></div>
+                <div>
+                  <p className="schedule-mini-label">Subjects Loaded</p>
+                  <h3>{dataCounts.subjects}</h3>
+                </div>
+              </div>
+            </article>
+            <article className="schedule-mini-card">
+              <div className="schedule-mini-head">
+                <div className="schedule-mini-icon"><FaDoorOpen /></div>
+                <div>
+                  <p className="schedule-mini-label">Rooms Loaded</p>
+                  <h3>{dataCounts.rooms}</h3>
+                </div>
+              </div>
+            </article>
           </div>
-          <div className="form-group">
-            <label>Population Size</label>
-            <input
-              type="number"
-              value={constraints.population_size}
-              onChange={(e) => setConstraints({ ...constraints, population_size: parseInt(e.target.value) })}
-            />
+
+          <div className="schedule-profile-card">
+            <h3><FaWandMagicSparkles style={{marginRight: '8px', marginTop: '-2px'}} />Active Schedule Profile</h3>
+            <p>These values are managed from Settings > Schedule Configuration.</p>
+            <div className="schedule-profile-grid">
+              <div>
+                <span><FaTachometerAlt style={{marginRight: '6px'}} />Max Generations</span>
+                <strong>{constraints.max_generations}</strong>
+              </div>
+              <div>
+                <span><FaUsers style={{marginRight: '6px'}} />Population Size</span>
+                <strong>{constraints.population_size}</strong>
+              </div>
+              <div>
+                <span><FaRandom style={{marginRight: '6px'}} />Mutation Rate</span>
+                <strong>{constraints.mutation_rate}</strong>
+              </div>
+              <div>
+                <span><FaClock style={{marginRight: '6px'}} />Max Runtime</span>
+                <strong>{constraints.max_runtime_seconds}s</strong>
+              </div>
+            </div>
           </div>
-          <div className="form-group">
-            <label>Mutation Rate</label>
-            <input
-              type="number"
-              step="0.01"
-              value={constraints.mutation_rate}
-              onChange={(e) => setConstraints({ ...constraints, mutation_rate: parseFloat(e.target.value) })}
-            />
-          </div>
-          <div className="form-group">
-            <label>Max Runtime (seconds)</label>
-            <input
-              type="number"
-              min="5"
-              max="120"
-              value={constraints.max_runtime_seconds}
-              onChange={(e) => setConstraints({ ...constraints, max_runtime_seconds: parseInt(e.target.value, 10) })}
-            />
-          </div>
+
           <button 
             className="btn btn-success" 
             onClick={generateSchedule}
@@ -347,6 +398,36 @@ function Schedule() {
             <button className="btn btn-secondary print-btn" onClick={() => window.print()}>
               Print Generated List
             </button>
+          )}
+        </div>
+
+        <div className="card schedule-run-summary-card">
+          <h2><FaWandMagicSparkles style={{marginRight: '8px', marginTop: '-2px'}} />Latest Run Snapshot</h2>
+          {lastRunSummary ? (
+            <div className="schedule-profile-grid">
+              <div>
+                <span><FaHistory style={{marginRight: '6px'}} />Generated At</span>
+                <strong>{lastRunSummary.generatedAt}</strong>
+              </div>
+              <div>
+                <span><FaWandMagicSparkles style={{marginRight: '6px'}} />Quality</span>
+                <strong>{lastRunSummary.quality}</strong>
+              </div>
+              <div>
+                <span><FaBolt style={{marginRight: '6px'}} />Fitness</span>
+                <strong>{lastRunSummary.fitness ?? '-'}</strong>
+              </div>
+              <div>
+                <span>Generations</span>
+                <strong>{lastRunSummary.generations ?? '-'}</strong>
+              </div>
+              <div>
+                <span>Subjects Scheduled</span>
+                <strong>{lastRunSummary.subjectCount ?? '-'}</strong>
+              </div>
+            </div>
+          ) : (
+            <p className="schedule-empty-note">No previous run yet. Generate once to populate this snapshot.</p>
           )}
         </div>
 
@@ -405,9 +486,12 @@ function Schedule() {
 
         {!schedule && (
           <div className="card">
-            <p style={{ textAlign: 'center', color: '#666' }}>
-              No schedule generated yet. Configure parameters and click "Generate Schedule" to begin.
-            </p>
+            <p className="schedule-empty-note">No schedule generated yet. Click Generate Schedule to create a new list.</p>
+            <ul className="schedule-tip-list">
+              <li>Keep faculty, subjects, and rooms updated before generation.</li>
+              <li>Tune experimental algorithm values from Settings when needed.</li>
+              <li>Use print output for records once quality is acceptable.</li>
+            </ul>
           </div>
         )}
       </div>

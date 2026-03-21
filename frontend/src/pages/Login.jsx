@@ -31,7 +31,7 @@ function Login() {
     } catch (err) {
       const errorMessage = err.response?.data?.error || err.message || 'Login failed';
       setError(errorMessage);
-      console.error('Login error:', err);
+      console.error('Login request failed');
     } finally {
       setLoading(false);
     }
