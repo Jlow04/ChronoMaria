@@ -19,6 +19,7 @@
   z-index: 1201;
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 8px;
   border: 1px solid rgba(151, 198, 247, 0.88);
   color: #103f79;
@@ -29,12 +30,43 @@
   letter-spacing: 0.2px;
   padding: 10px 14px;
   cursor: pointer;
-  transition: transform 0.16s ease, box-shadow 0.16s ease;
+  transition: padding 0.22s ease, width 0.22s ease, transform 0.16s ease, box-shadow 0.16s ease;
   box-shadow: 0 8px 16px rgba(58, 109, 178, 0.2);
+  min-width: 44px;
 }
 
-.sidebar-toggle:hover {
+.sidebar-toggle:hover,
+.sidebar-toggle:focus {
   transform: translateY(-1px);
+  box-shadow: 0 10px 20px rgba(58, 109, 178, 0.28);
+}
+
+.sidebar-toggle.scrolled {
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  gap: 0;
+}
+
+.sidebar-toggle.scrolled .toggle-text {
+  max-width: 0;
+  overflow: hidden;
+  opacity: 0;
+  transition: max-width 0.22s ease, opacity 0.22s ease, gap 0.22s ease;
+}
+
+.sidebar-toggle.scrolled:hover,
+.sidebar-toggle.scrolled:focus {
+  width: auto;
+  height: auto;
+  padding: 10px 14px;
+  gap: 8px;
+}
+
+.sidebar-toggle.scrolled:hover .toggle-text,
+.sidebar-toggle.scrolled:focus .toggle-text {
+  max-width: 80px;
+  opacity: 1;
 }
 
 .toggle-icon {
