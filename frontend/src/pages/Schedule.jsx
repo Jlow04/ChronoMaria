@@ -2,6 +2,9 @@ import React, { useState, useEffect } from 'react';
 import Navbar from '../components/Navbar';
 import { scheduleService, facultyService, subjectService, roomService } from '../services/api';
 import { getScheduleSettings } from '../services/scheduleSettings';
+import { FaChalkboardTeacher, FaBookOpen, FaDoorOpen, FaTachometerAlt, FaRandom, FaClock, FaUsers } from 'react-icons/fa';
+import { FaWandMagicSparkles, FaBolt } from 'react-icons/fa6';
+import { FaHistory } from 'react-icons/fa';
 import './Schedule.css';
 
 const LAST_SCHEDULE_RUN_KEY = 'scheduleLastRun';
@@ -333,37 +336,52 @@ function Schedule() {
 
           <div className="schedule-dashboard-grid">
             <article className="schedule-mini-card">
-              <p className="schedule-mini-label">Faculty Loaded</p>
-              <h3>{dataCounts.faculty}</h3>
+              <div className="schedule-mini-head">
+                <div className="schedule-mini-icon"><FaChalkboardTeacher /></div>
+                <div>
+                  <p className="schedule-mini-label">Faculty Loaded</p>
+                  <h3>{dataCounts.faculty}</h3>
+                </div>
+              </div>
             </article>
             <article className="schedule-mini-card">
-              <p className="schedule-mini-label">Subjects Loaded</p>
-              <h3>{dataCounts.subjects}</h3>
+              <div className="schedule-mini-head">
+                <div className="schedule-mini-icon"><FaBookOpen /></div>
+                <div>
+                  <p className="schedule-mini-label">Subjects Loaded</p>
+                  <h3>{dataCounts.subjects}</h3>
+                </div>
+              </div>
             </article>
             <article className="schedule-mini-card">
-              <p className="schedule-mini-label">Rooms Loaded</p>
-              <h3>{dataCounts.rooms}</h3>
+              <div className="schedule-mini-head">
+                <div className="schedule-mini-icon"><FaDoorOpen /></div>
+                <div>
+                  <p className="schedule-mini-label">Rooms Loaded</p>
+                  <h3>{dataCounts.rooms}</h3>
+                </div>
+              </div>
             </article>
           </div>
 
           <div className="schedule-profile-card">
-            <h3>Active Schedule Profile</h3>
+            <h3><FaWandMagicSparkles style={{marginRight: '8px', marginTop: '-2px'}} />Active Schedule Profile</h3>
             <p>These values are managed from Settings > Schedule Configuration.</p>
             <div className="schedule-profile-grid">
               <div>
-                <span>Max Generations</span>
+                <span><FaTachometerAlt style={{marginRight: '6px'}} />Max Generations</span>
                 <strong>{constraints.max_generations}</strong>
               </div>
               <div>
-                <span>Population Size</span>
+                <span><FaUsers style={{marginRight: '6px'}} />Population Size</span>
                 <strong>{constraints.population_size}</strong>
               </div>
               <div>
-                <span>Mutation Rate</span>
+                <span><FaRandom style={{marginRight: '6px'}} />Mutation Rate</span>
                 <strong>{constraints.mutation_rate}</strong>
               </div>
               <div>
-                <span>Max Runtime</span>
+                <span><FaClock style={{marginRight: '6px'}} />Max Runtime</span>
                 <strong>{constraints.max_runtime_seconds}s</strong>
               </div>
             </div>
@@ -384,19 +402,19 @@ function Schedule() {
         </div>
 
         <div className="card schedule-run-summary-card">
-          <h2>Latest Run Snapshot</h2>
+          <h2><FaWandMagicSparkles style={{marginRight: '8px', marginTop: '-2px'}} />Latest Run Snapshot</h2>
           {lastRunSummary ? (
             <div className="schedule-profile-grid">
               <div>
-                <span>Generated At</span>
+                <span><FaHistory style={{marginRight: '6px'}} />Generated At</span>
                 <strong>{lastRunSummary.generatedAt}</strong>
               </div>
               <div>
-                <span>Quality</span>
+                <span><FaWandMagicSparkles style={{marginRight: '6px'}} />Quality</span>
                 <strong>{lastRunSummary.quality}</strong>
               </div>
               <div>
-                <span>Fitness</span>
+                <span><FaBolt style={{marginRight: '6px'}} />Fitness</span>
                 <strong>{lastRunSummary.fitness ?? '-'}</strong>
               </div>
               <div>

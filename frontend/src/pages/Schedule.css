@@ -36,6 +36,25 @@
   padding: 12px;
 }
 
+.schedule-mini-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.schedule-mini-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  background: #0066cc;
+  color: #ffffff;
+  border-radius: 6px;
+  font-size: 16px;
+  flex-shrink: 0;
+}
+
 .schedule-mini-label {
   margin: 0;
   color: #4a6b95;
@@ -61,6 +80,9 @@
 .schedule-profile-card h3 {
   margin: 0 0 6px;
   color: #1f477a;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .schedule-profile-card p {
@@ -88,6 +110,9 @@
   color: #4f6d8f;
   text-transform: uppercase;
   letter-spacing: 0.6px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .schedule-profile-grid strong {
@@ -97,6 +122,12 @@
 
 .schedule-run-summary-card {
   margin-top: 20px;
+}
+
+.schedule-run-summary-card h2 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .schedule-empty-note {

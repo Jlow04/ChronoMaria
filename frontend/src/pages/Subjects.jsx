@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { FaBookOpen, FaClock, FaSitemap } from 'react-icons/fa';
 import Navbar from '../components/Navbar';
 import { subjectService } from '../services/api';
 import './Subjects.css';
@@ -80,6 +81,10 @@ function Subjects() {
     return Array.from(new Set(subjects.map((item) => String(item.department || '').trim()).filter(Boolean))).sort((a, b) => a.localeCompare(b));
   }, [subjects]);
 
+  const totalWeeklyHours = useMemo(() => {
+    return subjects.reduce((sum, item) => sum + (Number(item.hours_per_week) || 0), 0);
+  }, [subjects]);
+
   const filteredSubjects = useMemo(() => {
     const keyword = searchTerm.trim().toLowerCase();
 
@@ -124,15 +129,24 @@ function Subjects() {
 
         <div className="subjects-overview">
           <div className="subjects-stat-card">
-            <p className="subjects-stat-label">Total Subjects</p>
+            <div className="subjects-stat-head">
+              <span className="subjects-stat-icon"><FaBookOpen /></span>
+              <p className="subjects-stat-label">Total Subjects</p>
+            </div>
             <h3>{subjects.length}</h3>
           </div>
           <div className="subjects-stat-card">
-            <p className="subjects-stat-label">Visible Results</p>
-            <h3>{filteredSubjects.length}</h3>
+            <div className="subjects-stat-head">
+              <span className="subjects-stat-icon"><FaClock /></span>
+              <p className="subjects-stat-label">Hours per Week (All)</p>
+            </div>
+            <h3>{totalWeeklyHours}</h3>
           </div>
           <div className="subjects-stat-card">
-            <p className="subjects-stat-label">Departments</p>
+            <div className="subjects-stat-head">
+              <span className="subjects-stat-icon"><FaSitemap /></span>
+              <p className="subjects-stat-label">Departments</p>
+            </div>
             <h3>{departments.length}</h3>
           </div>
         </div>

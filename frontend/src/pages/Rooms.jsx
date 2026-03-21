@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { FaDoorOpen, FaFlask, FaUsers } from 'react-icons/fa';
 import Navbar from '../components/Navbar';
 import { roomService } from '../services/api';
 import './Rooms.css';
@@ -79,6 +80,14 @@ function Rooms() {
     return Array.from(new Set(rooms.map((item) => String(item.type || '').trim()).filter(Boolean))).sort((a, b) => a.localeCompare(b));
   }, [rooms]);
 
+  const totalCapacity = useMemo(() => {
+    return rooms.reduce((sum, item) => sum + (Number(item.capacity) || 0), 0);
+  }, [rooms]);
+
+  const labRooms = useMemo(() => {
+    return rooms.filter((item) => String(item.type || '').toLowerCase().includes('lab')).length;
+  }, [rooms]);
+
   const filteredRooms = useMemo(() => {
     const keyword = searchTerm.trim().toLowerCase();
 
@@ -124,16 +133,25 @@ function Rooms() {
 
         <div className="rooms-overview">
           <div className="rooms-stat-card">
-            <p className="rooms-stat-label">Total Rooms</p>
+            <div className="rooms-stat-head">
+              <span className="rooms-stat-icon"><FaDoorOpen /></span>
+              <p className="rooms-stat-label">Total Rooms</p>
+            </div>
             <h3>{rooms.length}</h3>
           </div>
           <div className="rooms-stat-card">
-            <p className="rooms-stat-label">Visible Results</p>
-            <h3>{filteredRooms.length}</h3>
+            <div className="rooms-stat-head">
+              <span className="rooms-stat-icon"><FaUsers /></span>
+              <p className="rooms-stat-label">Total Capacity</p>
+            </div>
+            <h3>{totalCapacity}</h3>
           </div>
           <div className="rooms-stat-card">
-            <p className="rooms-stat-label">Room Types</p>
-            <h3>{roomTypes.length}</h3>
+            <div className="rooms-stat-head">
+              <span className="rooms-stat-icon"><FaFlask /></span>
+              <p className="rooms-stat-label">Lab Rooms</p>
+            </div>
+            <h3>{labRooms}</h3>
           </div>
         </div>
 

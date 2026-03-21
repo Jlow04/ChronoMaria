@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { FaBuilding, FaChalkboardTeacher, FaStar } from 'react-icons/fa';
 import Navbar from '../components/Navbar';
 import { facultyService } from '../services/api';
 import './Faculty.css';
@@ -80,6 +81,18 @@ function Faculty() {
     return Array.from(new Set(faculty.map((item) => String(item.department || '').trim()).filter(Boolean))).sort((a, b) => a.localeCompare(b));
   }, [faculty]);
 
+  const averageMaxUnits = useMemo(() => {
+    if (faculty.length === 0) {
+      return 0;
+    }
+    const total = faculty.reduce((sum, item) => sum + (Number(item.max_units) || 0), 0);
+    return (total / faculty.length).toFixed(1);
+  }, [faculty]);
+
+  const withPreferencesCount = useMemo(() => {
+    return faculty.filter((item) => String(item.preferred_subjects || '').trim().length > 0).length;
+  }, [faculty]);
+
   const filteredFaculty = useMemo(() => {
     const keyword = searchTerm.trim().toLowerCase();
 
@@ -125,16 +138,26 @@ function Faculty() {
 
         <div className="faculty-overview">
           <div className="faculty-stat-card">
-            <p className="faculty-stat-label">Total Faculty</p>
+            <div className="faculty-stat-head">
+              <span className="faculty-stat-icon"><FaChalkboardTeacher /></span>
+              <p className="faculty-stat-label">Total Faculty</p>
+            </div>
             <h3>{faculty.length}</h3>
           </div>
           <div className="faculty-stat-card">
-            <p className="faculty-stat-label">Visible Results</p>
-            <h3>{filteredFaculty.length}</h3>
+            <div className="faculty-stat-head">
+              <span className="faculty-stat-icon"><FaBuilding /></span>
+              <p className="faculty-stat-label">Departments</p>
+            </div>
+            <h3>{departments.length}</h3>
           </div>
           <div className="faculty-stat-card">
-            <p className="faculty-stat-label">Departments</p>
-            <h3>{departments.length}</h3>
+            <div className="faculty-stat-head">
+              <span className="faculty-stat-icon"><FaStar /></span>
+              <p className="faculty-stat-label">With Preferences</p>
+            </div>
+            <h3>{withPreferencesCount}</h3>
+            <p className="faculty-stat-subtext">Avg max units: {averageMaxUnits}</p>
           </div>
         </div>
 
