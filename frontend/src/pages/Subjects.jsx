@@ -1,33 +1,48 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import Navbar from '../components/Navbar';
 import { subjectService } from '../services/api';
+import './Subjects.css';
+
+const emptySubject = {
+  code: '',
+  name: '',
+  units: '',
+  hours_per_week: '',
+  department: ''
+};
 
 function Subjects() {
   const [subjects, setSubjects] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
   const [showModal, setShowModal] = useState(false);
-  const [currentSubject, setCurrentSubject] = useState({
-    code: '',
-    name: '',
-    units: '',
-    hours_per_week: '',
-    department: ''
-  });
+  const [currentSubject, setCurrentSubject] = useState(emptySubject);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [departmentFilter, setDepartmentFilter] = useState('all');
+  const [sortKey, setSortKey] = useState('name');
+  const [sortDirection, setSortDirection] = useState('asc');
 
   useEffect(() => {
     loadSubjects();
   }, []);
 
   const loadSubjects = async () => {
+    setLoading(true);
+    setError('');
     try {
       const data = await subjectService.getAll();
       setSubjects(data);
     } catch (error) {
       console.error('Error loading subjects:', error);
+      setError('Unable to load subjects right now. Please try again.');
+    } finally {
+      setLoading(false);
     }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setError('');
     try {
       if (currentSubject.id) {
         await subjectService.update(currentSubject.id, currentSubject);
@@ -35,10 +50,11 @@ function Subjects() {
         await subjectService.create(currentSubject);
       }
       setShowModal(false);
-      setCurrentSubject({ code: '', name: '', units: '', hours_per_week: '', department: '' });
+      setCurrentSubject(emptySubject);
       loadSubjects();
     } catch (error) {
       console.error('Error saving subject:', error);
+      setError('Unable to save subject. Please verify details and try again.');
     }
   };
 
@@ -49,13 +65,50 @@ function Subjects() {
 
   const handleDelete = async (id) => {
     if (window.confirm('Are you sure you want to delete this subject?')) {
+      setError('');
       try {
         await subjectService.delete(id);
         loadSubjects();
       } catch (error) {
         console.error('Error deleting subject:', error);
+        setError('Unable to delete subject at the moment.');
       }
     }
+  };
+
+  const departments = useMemo(() => {
+    return Array.from(new Set(subjects.map((item) => String(item.department || '').trim()).filter(Boolean))).sort((a, b) => a.localeCompare(b));
+  }, [subjects]);
+
+  const filteredSubjects = useMemo(() => {
+    const keyword = searchTerm.trim().toLowerCase();
+
+    const filtered = subjects.filter((item) => {
+      const matchesSearch = !keyword
+        || String(item.code || '').toLowerCase().includes(keyword)
+        || String(item.name || '').toLowerCase().includes(keyword)
+        || String(item.department || '').toLowerCase().includes(keyword);
+      const matchesDepartment = departmentFilter === 'all' || item.department === departmentFilter;
+      return matchesSearch && matchesDepartment;
+    });
+
+    filtered.sort((a, b) => {
+      const leftRaw = a[sortKey];
+      const rightRaw = b[sortKey];
+      const left = typeof leftRaw === 'number' ? leftRaw : String(leftRaw || '').toLowerCase();
+      const right = typeof rightRaw === 'number' ? rightRaw : String(rightRaw || '').toLowerCase();
+
+      if (left < right) return sortDirection === 'asc' ? -1 : 1;
+      if (left > right) return sortDirection === 'asc' ? 1 : -1;
+      return 0;
+    });
+
+    return filtered;
+  }, [subjects, searchTerm, departmentFilter, sortKey, sortDirection]);
+
+  const resetSubjectModal = () => {
+    setShowModal(false);
+    setCurrentSubject(emptySubject);
   };
 
   return (
@@ -67,47 +120,122 @@ function Subjects() {
           <p>Manage subjects and course offerings</p>
         </div>
 
-        <div className="actions">
-          <button className="btn btn-primary" onClick={() => setShowModal(true)}>
-            Add Subject
-          </button>
+        {error && <div className="subjects-alert">{error}</div>}
+
+        <div className="subjects-overview">
+          <div className="subjects-stat-card">
+            <p className="subjects-stat-label">Total Subjects</p>
+            <h3>{subjects.length}</h3>
+          </div>
+          <div className="subjects-stat-card">
+            <p className="subjects-stat-label">Visible Results</p>
+            <h3>{filteredSubjects.length}</h3>
+          </div>
+          <div className="subjects-stat-card">
+            <p className="subjects-stat-label">Departments</p>
+            <h3>{departments.length}</h3>
+          </div>
+        </div>
+
+        <div className="card subjects-toolbar-card">
+          <div className="subjects-toolbar">
+            <div className="subjects-search-wrap">
+              <label htmlFor="subjects-search">Search</label>
+              <input
+                id="subjects-search"
+                type="text"
+                className="subjects-search-input"
+                placeholder="Search code, name, or department"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
+
+            <div className="subjects-filter-wrap">
+              <label htmlFor="subjects-department-filter">Department</label>
+              <select
+                id="subjects-department-filter"
+                value={departmentFilter}
+                onChange={(e) => setDepartmentFilter(e.target.value)}
+              >
+                <option value="all">All Departments</option>
+                {departments.map((department) => (
+                  <option key={department} value={department}>{department}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="subjects-filter-wrap">
+              <label htmlFor="subjects-sort-key">Sort By</label>
+              <select
+                id="subjects-sort-key"
+                value={sortKey}
+                onChange={(e) => setSortKey(e.target.value)}
+              >
+                <option value="name">Name</option>
+                <option value="code">Code</option>
+                <option value="department">Department</option>
+                <option value="units">Units</option>
+                <option value="hours_per_week">Hours/Week</option>
+              </select>
+            </div>
+
+            <button
+              type="button"
+              className="btn btn-secondary subjects-sort-direction"
+              onClick={() => setSortDirection((prev) => (prev === 'asc' ? 'desc' : 'asc'))}
+            >
+              {sortDirection === 'asc' ? 'Ascending' : 'Descending'}
+            </button>
+          </div>
+
+          <div className="actions subjects-actions">
+            <button className="btn btn-primary" onClick={() => setShowModal(true)}>
+              Add Subject
+            </button>
+          </div>
         </div>
 
         <div className="card">
-          <table className="table">
-            <thead>
-              <tr>
-                <th>Code</th>
-                <th>Name</th>
-                <th>Units</th>
-                <th>Hours/Week</th>
-                <th>Department</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {subjects.length === 0 ? (
+          <div className="subjects-table-wrap">
+            <table className="table">
+              <thead>
                 <tr>
-                  <td colSpan="6" style={{ textAlign: 'center' }}>No subjects found</td>
+                  <th>Code</th>
+                  <th>Name</th>
+                  <th>Units</th>
+                  <th>Hours/Week</th>
+                  <th>Department</th>
+                  <th>Actions</th>
                 </tr>
-              ) : (
-                subjects.map((item) => (
-                  <tr key={item.id}>
-                    <td>{item.code}</td>
-                    <td>{item.name}</td>
-                    <td>{item.units}</td>
-                    <td>{item.hours_per_week}</td>
-                    <td>{item.department}</td>
-                    <td>
-                      <button className="btn btn-secondary" onClick={() => handleEdit(item)}>Edit</button>
-                      {' '}
-                      <button className="btn btn-danger" onClick={() => handleDelete(item.id)}>Delete</button>
-                    </td>
+              </thead>
+              <tbody>
+                {loading ? (
+                  <tr>
+                    <td colSpan="6" className="subjects-empty-cell">Loading subjects...</td>
                   </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+                ) : filteredSubjects.length === 0 ? (
+                  <tr>
+                    <td colSpan="6" className="subjects-empty-cell">No subjects match your current filters.</td>
+                  </tr>
+                ) : (
+                  filteredSubjects.map((item) => (
+                    <tr key={item.id}>
+                      <td>{item.code}</td>
+                      <td>{item.name}</td>
+                      <td>{item.units}</td>
+                      <td>{item.hours_per_week}</td>
+                      <td>{item.department}</td>
+                      <td className="subjects-actions-cell">
+                        <button className="btn btn-secondary" onClick={() => handleEdit(item)}>Edit</button>
+                        <button className="btn btn-danger" onClick={() => handleDelete(item.id)}>Delete</button>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
 
         {showModal && (
@@ -163,10 +291,7 @@ function Subjects() {
                   />
                 </div>
                 <div className="modal-footer">
-                  <button type="button" className="btn btn-secondary" onClick={() => {
-                    setShowModal(false);
-                    setCurrentSubject({ code: '', name: '', units: '', hours_per_week: '', department: '' });
-                  }}>
+                  <button type="button" className="btn btn-secondary" onClick={resetSubjectModal}>
                     Cancel
                   </button>
                   <button type="submit" className="btn btn-primary">Save</button>

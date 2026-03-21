@@ -10,11 +10,11 @@ exports.login = async (req, res) => {
       return res.status(400).json({ error: 'Username and password are required' });
     }
 
-    console.log(`🔐 Login attempt - Username: "${username}"`);
+    console.log('🔐 Login attempt received');
     
     const user = await User.getByUsername(username);
     if (!user) {
-      console.log(`❌ User not found: "${username}"`);
+      console.log('❌ User not found');
       return res.status(401).json({ error: 'Invalid username or password' });
     }
 
@@ -30,11 +30,11 @@ exports.login = async (req, res) => {
 
     // Check if user is active
     if (!user.is_active) {
-      console.log(`❌ User account is inactive: "${username}"`);
+      console.log('❌ User account is inactive');
       return res.status(403).json({ error: 'User must ask for Authorization' });
     }
 
-    console.log(`✅ Login successful for user: ${username}`);
+    console.log('✅ Login successful');
 
     // Don't return password_hash
     const { password_hash: _, ...userWithoutPassword } = user;

@@ -1,12 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import Navbar from '../components/Navbar';
 import { userService, auditLogService } from '../services/api';
+import {
+  getScheduleSettings,
+  normalizeScheduleSettings,
+  resetScheduleSettings,
+  saveScheduleSettings,
+} from '../services/scheduleSettings';
 import './Settings.css';
 
 function Settings() {
   const [expandedSections, setExpandedSections] = useState({
     currentUsers: false,
     createUser: false,
+    scheduleConfig: false,
     auditLogs: false
   });
   const [users, setUsers] = useState([]);
@@ -31,6 +38,8 @@ function Settings() {
   });
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [scheduleConfig, setScheduleConfig] = useState(getScheduleSettings());
+  const [scheduleConfigMessage, setScheduleConfigMessage] = useState('');
 
   // Get current user from localStorage
   const getCurrentUser = () => {
@@ -221,6 +230,31 @@ function Settings() {
     setDeleteConfirmation({ show: false, userId: null, username: '' });
   };
 
+  const handleScheduleConfigChange = (field, value) => {
+    setScheduleConfig(prev => {
+      const next = {
+        ...prev,
+        [field]: value,
+      };
+      return next;
+    });
+    setScheduleConfigMessage('');
+  };
+
+  const handleSaveScheduleConfig = () => {
+    const normalized = saveScheduleSettings(scheduleConfig);
+    setScheduleConfig(normalized);
+    setScheduleConfigMessage('Schedule configuration saved.');
+  };
+
+  const handleResetScheduleConfig = () => {
+    const defaults = resetScheduleSettings();
+    setScheduleConfig(defaults);
+    setScheduleConfigMessage('Schedule configuration reset to defaults.');
+  };
+
+  const schedulePreview = normalizeScheduleSettings(scheduleConfig);
+
   return (
     <>
       <Navbar />
@@ -410,6 +444,89 @@ function Settings() {
                         {loading ? 'Creating...' : 'Create User'}
                       </button>
                     </form>
+                  </div>
+                )}
+              </div>
+
+              <div className={`dropdown-section ${expandedSections.scheduleConfig ? 'expanded' : ''}`}>
+                <button
+                  className="dropdown-toggle"
+                  onClick={() => toggleSection('scheduleConfig')}
+                >
+                  <span className="dropdown-icon">▼</span>
+                  <span>Schedule Configuration</span>
+                </button>
+                {expandedSections.scheduleConfig && (
+                  <div className="dropdown-content">
+                    <div className="schedule-config-grid">
+                      <div className="form-group">
+                        <label htmlFor="schedule-max-generations">Max Generations</label>
+                        <input
+                          id="schedule-max-generations"
+                          type="number"
+                          min="20"
+                          max="1000"
+                          value={scheduleConfig.max_generations}
+                          onChange={(e) => handleScheduleConfigChange('max_generations', e.target.value)}
+                        />
+                      </div>
+
+                      <div className="form-group">
+                        <label htmlFor="schedule-population-size">Population Size</label>
+                        <input
+                          id="schedule-population-size"
+                          type="number"
+                          min="10"
+                          max="300"
+                          value={scheduleConfig.population_size}
+                          onChange={(e) => handleScheduleConfigChange('population_size', e.target.value)}
+                        />
+                      </div>
+
+                      <div className="form-group">
+                        <label htmlFor="schedule-mutation-rate">Mutation Rate</label>
+                        <input
+                          id="schedule-mutation-rate"
+                          type="number"
+                          step="0.01"
+                          min="0.01"
+                          max="0.5"
+                          value={scheduleConfig.mutation_rate}
+                          onChange={(e) => handleScheduleConfigChange('mutation_rate', e.target.value)}
+                        />
+                      </div>
+
+                      <div className="form-group">
+                        <label htmlFor="schedule-max-runtime">Max Runtime (seconds)</label>
+                        <input
+                          id="schedule-max-runtime"
+                          type="number"
+                          min="5"
+                          max="180"
+                          value={scheduleConfig.max_runtime_seconds}
+                          onChange={(e) => handleScheduleConfigChange('max_runtime_seconds', e.target.value)}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="schedule-preview-card">
+                      <p><strong>Applied Preview</strong></p>
+                      <p>Generations: {schedulePreview.max_generations}</p>
+                      <p>Population: {schedulePreview.population_size}</p>
+                      <p>Mutation: {schedulePreview.mutation_rate}</p>
+                      <p>Runtime: {schedulePreview.max_runtime_seconds}s</p>
+                    </div>
+
+                    {scheduleConfigMessage && <p className="schedule-config-message">{scheduleConfigMessage}</p>}
+
+                    <div className="schedule-config-actions">
+                      <button type="button" className="btn btn-secondary" onClick={handleResetScheduleConfig}>
+                        Reset Defaults
+                      </button>
+                      <button type="button" className="btn btn-primary" onClick={handleSaveScheduleConfig}>
+                        Save Configuration
+                      </button>
+                    </div>
                   </div>
                 )}
               </div>

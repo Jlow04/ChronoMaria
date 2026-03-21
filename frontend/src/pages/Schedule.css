@@ -2,6 +2,117 @@
   margin-left: 10px;
 }
 
+.schedule-warning,
+.schedule-ready {
+  padding: 10px;
+  margin-bottom: 15px;
+  border-radius: 8px;
+  font-weight: 600;
+}
+
+.schedule-warning {
+  background: #fff3cd;
+  color: #856404;
+  border: 1px solid #ffe59c;
+}
+
+.schedule-ready {
+  background: #d4edda;
+  color: #155724;
+  border: 1px solid #b4e4be;
+}
+
+.schedule-dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.schedule-mini-card {
+  border: 1px solid #d7e7fb;
+  border-radius: 12px;
+  background: #f8fcff;
+  padding: 12px;
+}
+
+.schedule-mini-label {
+  margin: 0;
+  color: #4a6b95;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+}
+
+.schedule-mini-card h3 {
+  margin: 8px 0 0;
+  color: #124784;
+  font-size: 30px;
+}
+
+.schedule-profile-card {
+  border: 1px solid #d7e7fb;
+  border-radius: 12px;
+  background: #fbfdff;
+  padding: 14px;
+  margin-bottom: 14px;
+}
+
+.schedule-profile-card h3 {
+  margin: 0 0 6px;
+  color: #1f477a;
+}
+
+.schedule-profile-card p {
+  margin: 0 0 12px;
+  color: #4f6d8f;
+}
+
+.schedule-profile-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.schedule-profile-grid div {
+  border: 1px solid #e2ebf8;
+  border-radius: 10px;
+  background: #fff;
+  padding: 10px;
+  display: grid;
+  gap: 5px;
+}
+
+.schedule-profile-grid span {
+  font-size: 12px;
+  color: #4f6d8f;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+}
+
+.schedule-profile-grid strong {
+  color: #163f72;
+  font-size: 16px;
+}
+
+.schedule-run-summary-card {
+  margin-top: 20px;
+}
+
+.schedule-empty-note {
+  text-align: center;
+  color: #516d8e;
+  margin: 0;
+}
+
+.schedule-tip-list {
+  margin: 14px 0 0;
+  padding-left: 18px;
+  color: #335a86;
+  display: grid;
+  gap: 8px;
+}
+
 /* ── Quality Bar & Dropdown Report ───────────────────────────────── */
 .quality-summary-card {
   margin-top: 20px;
@@ -124,6 +235,11 @@
 }
 
 @media (max-width: 900px) {
+  .schedule-dashboard-grid,
+  .schedule-profile-grid {
+    grid-template-columns: 1fr;
+  }
+
   .quality-grid {
     grid-template-columns: 1fr;
   }
@@ -211,7 +327,9 @@
   .form-group,
   .btn,
   .actions,
-  .print-btn {
+  .print-btn,
+  .schedule-run-summary-card,
+  .schedule-tip-list {
     display: none !important;
   }
 

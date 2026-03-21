@@ -839,10 +839,57 @@
   transform: scale(0.95);
 }
 
+.schedule-config-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.schedule-preview-card {
+  margin-top: 8px;
+  border: 1px solid #d8e1f0;
+  border-radius: 8px;
+  background: #fff;
+  padding: 12px;
+}
+
+.schedule-preview-card p {
+  margin: 4px 0;
+  color: #355072;
+  font-size: 14px;
+}
+
+.schedule-config-message {
+  margin-top: 10px;
+  color: #225086;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.schedule-config-actions {
+  margin-top: 12px;
+  display: flex;
+  gap: 10px;
+}
+
+.schedule-config-actions .btn {
+  flex: 1;
+}
+
 /* Password Mismatch Error */
 .error-message {
   font-size: 13px;
   color: #dc3545;
   margin-top: 4px;
   font-weight: 500;
+}
+
+@media (max-width: 768px) {
+  .schedule-config-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .schedule-config-actions {
+    flex-direction: column;
+  }
 }

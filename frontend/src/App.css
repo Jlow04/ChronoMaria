@@ -1,5 +1,6 @@
 .app {
   min-height: 100vh;
+  position: relative;
   background:
     radial-gradient(1000px 640px at 8% 5%, rgba(195, 226, 255, 0.5) 0%, rgba(255, 255, 255, 0) 60%),
     radial-gradient(900px 580px at 92% 92%, rgba(129, 194, 255, 0.36) 0%, rgba(255, 255, 255, 0) 62%),
@@ -151,7 +152,7 @@
 }
 
 .top-right-logout {
-  position: fixed;
+  position: absolute;
   top: 18px;
   right: 20px;
   z-index: 1201;
@@ -174,7 +175,6 @@
 }
 
 .navbar-logout:hover {
-  transform: translateY(-1px);
   box-shadow: 0 8px 16px rgba(58, 109, 178, 0.2);
 }
 
