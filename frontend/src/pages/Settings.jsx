@@ -224,7 +224,7 @@ function Settings() {
   return (
     <>
       <Navbar />
-      <div className="settings-container">
+      <div className="settings-container page-content">
         <div className="settings-header">
           <h1>Settings</h1>
           <p>Manage system and user settings</p>

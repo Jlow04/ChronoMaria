@@ -43,7 +43,7 @@ function Dashboard() {
   return (
     <div className="app">
       <Navbar />
-      <div className="container">
+      <div className="container page-content">
         <div className="page-header">
           <h1>Dashboard</h1>
           <p>Overview of the faculty loading system</p>

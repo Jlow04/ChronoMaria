@@ -283,7 +283,7 @@ function Schedule() {
   return (
     <div className="app">
       <Navbar />
-      <div className="container">
+      <div className="container page-content">
         <div className="page-header">
           <h1>Schedule Generation</h1>
           <p>Generate optimized faculty loading schedules using genetic algorithm</p>

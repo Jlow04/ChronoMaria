@@ -61,7 +61,7 @@ function Subjects() {
   return (
     <div className="app">
       <Navbar />
-      <div className="container">
+      <div className="container page-content">
         <div className="page-header">
           <h1>Subject Management</h1>
           <p>Manage subjects and course offerings</p>

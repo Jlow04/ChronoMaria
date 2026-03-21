@@ -60,7 +60,7 @@ function Rooms() {
   return (
     <div className="app">
       <Navbar />
-      <div className="container">
+      <div className="container page-content">
         <div className="page-header">
           <h1>Room Management</h1>
           <p>Manage classroom and room assignments</p>
