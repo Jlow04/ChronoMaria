@@ -40,6 +40,7 @@ function Settings() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [scheduleConfig, setScheduleConfig] = useState(getScheduleSettings());
   const [scheduleConfigMessage, setScheduleConfigMessage] = useState('');
+  const [activeScheduleInfo, setActiveScheduleInfo] = useState('');
 
   // Get current user from localStorage
   const getCurrentUser = () => {
@@ -253,7 +254,42 @@ function Settings() {
     setScheduleConfigMessage('Schedule configuration reset to defaults.');
   };
 
+  const toggleScheduleInfo = (field) => {
+    setActiveScheduleInfo((prev) => (prev === field ? '' : field));
+  };
+
   const schedulePreview = normalizeScheduleSettings(scheduleConfig);
+
+  const scheduleInfoContent = {
+    max_generations: {
+      label: 'Max Generations',
+      description: 'Controls how many improvement cycles the algorithm can run before stopping.',
+      impact: schedulePreview.max_generations < 100
+        ? 'Lower value is faster but may stop before finding a better schedule.'
+        : 'Higher value explores more combinations and may improve schedule quality at the cost of extra time.',
+    },
+    population_size: {
+      label: 'Population Size',
+      description: 'Sets how many candidate schedules are evaluated in each generation.',
+      impact: schedulePreview.population_size < 40
+        ? 'Smaller populations run faster but reduce variety, which can miss stronger solutions.'
+        : 'Larger populations improve variety and stability but increase processing time per generation.',
+    },
+    mutation_rate: {
+      label: 'Mutation Rate',
+      description: 'Determines how much random variation is introduced to candidate schedules.',
+      impact: schedulePreview.mutation_rate < 0.08
+        ? 'Lower mutation keeps solutions stable but can get stuck in local optima.'
+        : 'Higher mutation improves exploration but too much can make convergence noisy.',
+    },
+    max_runtime_seconds: {
+      label: 'Max Runtime',
+      description: 'Hard time limit for each scheduling run, even if generations are not yet complete.',
+      impact: schedulePreview.max_runtime_seconds < 20
+        ? 'Short runtime gives quick results, but complex loads may end early.'
+        : 'Longer runtime allows deeper search when load constraints are harder to satisfy.',
+    },
+  };
 
   return (
     <>
@@ -460,7 +496,18 @@ function Settings() {
                   <div className="dropdown-content">
                     <div className="schedule-config-grid">
                       <div className="form-group">
-                        <label htmlFor="schedule-max-generations">Max Generations</label>
+                        <div className="setting-label-row">
+                          <label htmlFor="schedule-max-generations">Max Generations</label>
+                          <button
+                            type="button"
+                            className={`setting-info-btn ${activeScheduleInfo === 'max_generations' ? 'active' : ''}`}
+                            onClick={() => toggleScheduleInfo('max_generations')}
+                            aria-label="About Max Generations"
+                            title="About Max Generations"
+                          >
+                            i
+                          </button>
+                        </div>
                         <input
                           id="schedule-max-generations"
                           type="number"
@@ -469,10 +516,29 @@ function Settings() {
                           value={scheduleConfig.max_generations}
                           onChange={(e) => handleScheduleConfigChange('max_generations', e.target.value)}
                         />
+                        {activeScheduleInfo === 'max_generations' && (
+                          <div className="setting-info-popover" role="status" aria-live="polite">
+                            <p className="setting-info-title">{scheduleInfoContent.max_generations.label}</p>
+                            <p>{scheduleInfoContent.max_generations.description}</p>
+                            <p><strong>Current value:</strong> {schedulePreview.max_generations}</p>
+                            <p>{scheduleInfoContent.max_generations.impact}</p>
+                          </div>
+                        )}
                       </div>
 
                       <div className="form-group">
-                        <label htmlFor="schedule-population-size">Population Size</label>
+                        <div className="setting-label-row">
+                          <label htmlFor="schedule-population-size">Population Size</label>
+                          <button
+                            type="button"
+                            className={`setting-info-btn ${activeScheduleInfo === 'population_size' ? 'active' : ''}`}
+                            onClick={() => toggleScheduleInfo('population_size')}
+                            aria-label="About Population Size"
+                            title="About Population Size"
+                          >
+                            i
+                          </button>
+                        </div>
                         <input
                           id="schedule-population-size"
                           type="number"
@@ -481,10 +547,29 @@ function Settings() {
                           value={scheduleConfig.population_size}
                           onChange={(e) => handleScheduleConfigChange('population_size', e.target.value)}
                         />
+                        {activeScheduleInfo === 'population_size' && (
+                          <div className="setting-info-popover" role="status" aria-live="polite">
+                            <p className="setting-info-title">{scheduleInfoContent.population_size.label}</p>
+                            <p>{scheduleInfoContent.population_size.description}</p>
+                            <p><strong>Current value:</strong> {schedulePreview.population_size}</p>
+                            <p>{scheduleInfoContent.population_size.impact}</p>
+                          </div>
+                        )}
                       </div>
 
                       <div className="form-group">
-                        <label htmlFor="schedule-mutation-rate">Mutation Rate</label>
+                        <div className="setting-label-row">
+                          <label htmlFor="schedule-mutation-rate">Mutation Rate</label>
+                          <button
+                            type="button"
+                            className={`setting-info-btn ${activeScheduleInfo === 'mutation_rate' ? 'active' : ''}`}
+                            onClick={() => toggleScheduleInfo('mutation_rate')}
+                            aria-label="About Mutation Rate"
+                            title="About Mutation Rate"
+                          >
+                            i
+                          </button>
+                        </div>
                         <input
                           id="schedule-mutation-rate"
                           type="number"
@@ -494,10 +579,29 @@ function Settings() {
                           value={scheduleConfig.mutation_rate}
                           onChange={(e) => handleScheduleConfigChange('mutation_rate', e.target.value)}
                         />
+                        {activeScheduleInfo === 'mutation_rate' && (
+                          <div className="setting-info-popover" role="status" aria-live="polite">
+                            <p className="setting-info-title">{scheduleInfoContent.mutation_rate.label}</p>
+                            <p>{scheduleInfoContent.mutation_rate.description}</p>
+                            <p><strong>Current value:</strong> {schedulePreview.mutation_rate}</p>
+                            <p>{scheduleInfoContent.mutation_rate.impact}</p>
+                          </div>
+                        )}
                       </div>
 
                       <div className="form-group">
-                        <label htmlFor="schedule-max-runtime">Max Runtime (seconds)</label>
+                        <div className="setting-label-row">
+                          <label htmlFor="schedule-max-runtime">Max Runtime (seconds)</label>
+                          <button
+                            type="button"
+                            className={`setting-info-btn ${activeScheduleInfo === 'max_runtime_seconds' ? 'active' : ''}`}
+                            onClick={() => toggleScheduleInfo('max_runtime_seconds')}
+                            aria-label="About Max Runtime"
+                            title="About Max Runtime"
+                          >
+                            i
+                          </button>
+                        </div>
                         <input
                           id="schedule-max-runtime"
                           type="number"
@@ -506,6 +610,14 @@ function Settings() {
                           value={scheduleConfig.max_runtime_seconds}
                           onChange={(e) => handleScheduleConfigChange('max_runtime_seconds', e.target.value)}
                         />
+                        {activeScheduleInfo === 'max_runtime_seconds' && (
+                          <div className="setting-info-popover" role="status" aria-live="polite">
+                            <p className="setting-info-title">{scheduleInfoContent.max_runtime_seconds.label}</p>
+                            <p>{scheduleInfoContent.max_runtime_seconds.description}</p>
+                            <p><strong>Current value:</strong> {schedulePreview.max_runtime_seconds}s</p>
+                            <p>{scheduleInfoContent.max_runtime_seconds.impact}</p>
+                          </div>
+                        )}
                       </div>
                     </div>
 
