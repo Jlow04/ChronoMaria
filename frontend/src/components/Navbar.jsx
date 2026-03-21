@@ -44,6 +44,8 @@ function Navbar() {
     setIsSidebarOpen((prev) => {
       const next = !prev;
       localStorage.setItem('sidebarOpen', String(next));
+      // Re-evaluate scroll state on toggle
+      setIsScrolled(window.scrollY > 60);
       return next;
     });
   };
