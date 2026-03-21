@@ -1,6 +1,22 @@
 const supabase = require('../config/database');
 
 class Subject {
+  static normalizeData(data) {
+    if (Array.isArray(data)) {
+      return data.map(item => Subject.normalizeData(item));
+    }
+    return {
+      id: data.id,
+      code: data.CODE ?? data.code ?? null,
+      name: data.name,
+      units: data.units,
+      hours_per_week: data.hours_per_week,
+      department: data.department,
+      course_no: data['Course_No.'] ?? data.course_no ?? null,
+      section: data.SECTION ?? data.section ?? null,
+    };
+  }
+
   static buildPayload(subjectData) {
     const courseNo = subjectData.course_no ?? subjectData['Course_No.'] ?? null;
     const code = subjectData.code ?? subjectData.CODE ?? null;
@@ -24,7 +40,7 @@ class Subject {
       .order('id');
     
     if (error) throw error;
-    return data;
+    return Subject.normalizeData(data);
   }
 
   static async getById(id) {
@@ -35,7 +51,7 @@ class Subject {
       .single();
     
     if (error) throw error;
-    return data;
+    return Subject.normalizeData(data);
   }
 
   static async create(subjectData) {
@@ -47,7 +63,7 @@ class Subject {
       .single();
     
     if (error) throw error;
-    return data;
+    return Subject.normalizeData(data);
   }
 
   static async update(id, subjectData) {
@@ -60,7 +76,7 @@ class Subject {
       .single();
     
     if (error) throw error;
-    return data;
+    return Subject.normalizeData(data);
   }
 
   static async delete(id) {
@@ -72,7 +88,7 @@ class Subject {
       .single();
     
     if (error) throw error;
-    return data;
+    return Subject.normalizeData(data);
   }
 }
 
