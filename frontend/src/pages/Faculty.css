@@ -198,7 +198,13 @@
 }
 
 .faculty-subjects-picker-modal {
-  max-width: 620px;
+  width: min(96vw, 1120px);
+  max-width: 1120px;
+}
+
+.modal-content.faculty-subjects-picker-modal-wide {
+  width: min(96vw, 1120px) !important;
+  max-width: 1120px !important;
 }
 
 .modal-overlay {
@@ -225,15 +231,63 @@
 }
 
 .faculty-subjects-picker-body {
-  max-height: 52vh;
+  max-height: 68vh;
   overflow-y: auto;
   padding: 0 24px 16px;
+}
+
+.faculty-subjects-picker-controls {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin: 10px 0 8px;
+}
+
+.faculty-subjects-search-input {
+  flex: 1;
+  min-width: 220px;
+  padding: 10px 12px;
+  border: 1px solid rgba(171, 209, 255, 0.78);
+  border-radius: 10px;
+  font-size: 14px;
+  background: rgba(244, 250, 255, 0.92);
+}
+
+.faculty-subjects-search-input:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(77, 158, 255, 0.2);
+}
+
+.faculty-picker-action-btn {
+  white-space: nowrap;
+}
+
+.faculty-subjects-count {
+  margin: 0 0 10px;
+  color: #557395;
+  font-size: 13px;
+  font-weight: 600;
 }
 
 .faculty-subjects-picker-list {
   border: 1px solid rgba(171, 209, 255, 0.78);
   border-radius: 8px;
   overflow: hidden;
+  max-height: 48vh;
+  overflow-y: auto;
+}
+
+.faculty-subject-group-title {
+  margin: 0;
+  padding: 10px 12px;
+  background: rgba(220, 235, 255, 0.45);
+  color: #234d7a;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  border-bottom: 1px solid rgba(171, 209, 255, 0.78);
 }
 
 .faculty-subject-option {
@@ -336,4 +390,17 @@
   margin-top: 12px;
   color: #557395;
   font-size: 14px;
+}
+
+@media (max-width: 760px) {
+  .faculty-subjects-picker-controls {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .faculty-subjects-picker-modal,
+  .modal-content.faculty-subjects-picker-modal-wide {
+    width: calc(100vw - 20px);
+    max-width: calc(100vw - 20px) !important;
+  }
 }

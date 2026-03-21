@@ -23,6 +23,10 @@ function Subjects() {
   const [sortKey, setSortKey] = useState('name');
   const [sortDirection, setSortDirection] = useState('asc');
   const [showDepartmentPicker, setShowDepartmentPicker] = useState(false);
+  const [departmentPrompt, setDepartmentPrompt] = useState('');
+  const [shakeDepartmentPicker, setShakeDepartmentPicker] = useState(false);
+  const [mainModalPrompt, setMainModalPrompt] = useState('');
+  const [shakeMainModal, setShakeMainModal] = useState(false);
 
   useEffect(() => {
     loadSubjects();
@@ -122,6 +126,20 @@ function Subjects() {
     setShowModal(false);
     setCurrentSubject(emptySubject);
     setShowDepartmentPicker(false);
+    setDepartmentPrompt('');
+    setMainModalPrompt('');
+  };
+
+  const triggerSubjectModalAttention = () => {
+    setMainModalPrompt('Please finish this window first before returning to the page.');
+    setShakeMainModal(true);
+    setTimeout(() => setShakeMainModal(false), 380);
+  };
+
+  const triggerDepartmentAttention = () => {
+    setDepartmentPrompt('Please finish this window first before returning to the page.');
+    setShakeDepartmentPicker(true);
+    setTimeout(() => setShakeDepartmentPicker(false), 380);
   };
 
   const selectDepartment = (department) => {
@@ -269,11 +287,12 @@ function Subjects() {
         </div>
 
         {showModal && (
-          <div className="modal">
-            <div className="modal-content">
+          <div className="modal" onClick={triggerSubjectModalAttention}>
+            <div className={`modal-content ${shakeMainModal ? 'modal-shake' : ''}`} onClick={(e) => e.stopPropagation()}>
               <div className="modal-header">
                 <h2>{currentSubject.id ? 'Edit Subject' : 'Add Subject'}</h2>
               </div>
+              {mainModalPrompt && <p className="modal-focus-prompt">{mainModalPrompt}</p>}
               <form onSubmit={handleSubmit}>
                 <div className="form-group">
                   <label>Code</label>
@@ -333,11 +352,12 @@ function Subjects() {
         )}
 
         {showModal && showDepartmentPicker && (
-          <div className="modal-overlay" onClick={() => setShowDepartmentPicker(false)}>
-            <div className="modal-content subjects-department-picker-modal" onClick={(e) => e.stopPropagation()}>
+          <div className="modal-overlay" onClick={triggerDepartmentAttention}>
+            <div className={`modal-content subjects-department-picker-modal ${shakeDepartmentPicker ? 'modal-shake' : ''}`} onClick={(e) => e.stopPropagation()}>
               <div className="modal-header">
                 <h2>Choose Department</h2>
               </div>
+              {departmentPrompt && <p className="modal-focus-prompt">{departmentPrompt}</p>}
               <div className="subjects-department-picker-body">
                 {departments.length === 0 ? (
                   <p className="subjects-department-empty">No departments available yet.</p>
@@ -362,7 +382,10 @@ function Subjects() {
                 )}
               </div>
               <div className="modal-footer">
-                <button type="button" className="btn btn-primary" onClick={() => setShowDepartmentPicker(false)}>
+                <button type="button" className="btn btn-primary" onClick={() => {
+                  setDepartmentPrompt('');
+                  setShowDepartmentPicker(false);
+                }}>
                   Done
                 </button>
               </div>

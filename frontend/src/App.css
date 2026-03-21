@@ -7,6 +7,17 @@
     linear-gradient(145deg, #d8e9fc 0%, #d0e2f9 40%, #c8ddf6 100%);
 }
 
+/* Keep scrolling behavior but hide visual scrollbars for a cleaner UI */
+* {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+*::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}
+
 .app {
   --sidebar-open-width: 268px;
   --sidebar-closed-width: 20px;
@@ -283,10 +294,41 @@ body:has(.modal-overlay) .top-right-logout {
   width: 100%;
   height: 100%;
   background-color: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
   display: flex;
   justify-content: center;
   align-items: center;
   z-index: 1000;
+}
+
+body:has(.modal),
+body:has(.modal-overlay) {
+  overflow: hidden;
+}
+
+.modal-shake {
+  animation: modalShake 0.36s ease;
+}
+
+@keyframes modalShake {
+  0%,
+  100% { transform: translateX(0); }
+  20% { transform: translateX(-8px); }
+  40% { transform: translateX(8px); }
+  60% { transform: translateX(-6px); }
+  80% { transform: translateX(6px); }
+}
+
+.modal-focus-prompt {
+  margin: 0 24px 12px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(245, 154, 154, 0.8);
+  background: rgba(255, 235, 235, 0.9);
+  color: #8f1f1f;
+  font-size: 13px;
+  font-weight: 600;
 }
 
 .modal-content {

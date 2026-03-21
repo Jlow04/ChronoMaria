@@ -25,6 +25,12 @@ function Faculty() {
   const [sortDirection, setSortDirection] = useState('asc');
   const [showSubjectPicker, setShowSubjectPicker] = useState(false);
   const [showDepartmentPicker, setShowDepartmentPicker] = useState(false);
+  const [subjectSearchTerm, setSubjectSearchTerm] = useState('');
+  const [pickerPrompt, setPickerPrompt] = useState('');
+  const [shakeSubjectPicker, setShakeSubjectPicker] = useState(false);
+  const [shakeDepartmentPicker, setShakeDepartmentPicker] = useState(false);
+  const [mainModalPrompt, setMainModalPrompt] = useState('');
+  const [shakeMainModal, setShakeMainModal] = useState(false);
 
   useEffect(() => {
     loadFaculty();
@@ -74,8 +80,41 @@ function Faculty() {
       const isDepartmentMatch = subjectDepartment === facultyDepartment;
       const isCommonSubject = /common/.test(subjectDepartment);
       return isDepartmentMatch || isCommonSubject;
+    }).sort((a, b) => {
+      const left = `${a.code || ''} ${a.name || ''}`.toLowerCase();
+      const right = `${b.code || ''} ${b.name || ''}`.toLowerCase();
+      return left.localeCompare(right);
     });
   }, [subjects, currentFaculty.department]);
+
+  const filteredAvailableSubjects = useMemo(() => {
+    const keyword = normalizeText(subjectSearchTerm);
+    if (!keyword) {
+      return availableSubjects;
+    }
+
+    return availableSubjects.filter((subject) => {
+      const haystack = `${subject.code || ''} ${subject.name || ''} ${subject.department || ''}`.toLowerCase();
+      return haystack.includes(keyword);
+    });
+  }, [availableSubjects, subjectSearchTerm]);
+
+  const groupedFilteredSubjects = useMemo(() => {
+    const facultyDepartment = normalizeText(currentFaculty.department);
+    const matchedDepartment = [];
+    const commonSubjects = [];
+
+    filteredAvailableSubjects.forEach((subject) => {
+      const subjectDepartment = normalizeText(subject.department);
+      if (subjectDepartment === facultyDepartment) {
+        matchedDepartment.push(subject);
+      } else {
+        commonSubjects.push(subject);
+      }
+    });
+
+    return { matchedDepartment, commonSubjects };
+  }, [filteredAvailableSubjects, currentFaculty.department]);
 
   const toggleSubjectSelection = (subjectId) => {
     const normalizedId = String(subjectId);
@@ -208,6 +247,15 @@ function Faculty() {
     setCurrentFaculty(emptyFaculty);
     setShowSubjectPicker(false);
     setShowDepartmentPicker(false);
+    setSubjectSearchTerm('');
+    setPickerPrompt('');
+    setMainModalPrompt('');
+  };
+
+  const triggerFacultyModalAttention = () => {
+    setMainModalPrompt('Please finish this window first before returning to the page.');
+    setShakeMainModal(true);
+    setTimeout(() => setShakeMainModal(false), 380);
   };
 
   const selectDepartment = (department) => {
@@ -218,18 +266,53 @@ function Faculty() {
     }));
     setShowDepartmentPicker(false);
     setShowSubjectPicker(false);
+    setSubjectSearchTerm('');
   };
 
-  const selectedSubjectLabels = useMemo(() => {
+  const openSubjectPicker = () => {
+    setSubjectSearchTerm('');
+    setPickerPrompt('');
+    setShowSubjectPicker(true);
+  };
+
+  const triggerPickerAttention = (pickerType) => {
+    setPickerPrompt('Please finish this window first before returning to the page.');
+    if (pickerType === 'subject') {
+      setShakeSubjectPicker(true);
+      setTimeout(() => setShakeSubjectPicker(false), 380);
+      return;
+    }
+    setShakeDepartmentPicker(true);
+    setTimeout(() => setShakeDepartmentPicker(false), 380);
+  };
+
+  const selectAllVisibleSubjects = () => {
+    const visibleIds = filteredAvailableSubjects.map((subject) => String(subject.id));
+    setCurrentFaculty((prev) => {
+      const current = Array.isArray(prev.preferred_subjects) ? prev.preferred_subjects : [];
+      return {
+        ...prev,
+        preferred_subjects: Array.from(new Set([...current, ...visibleIds])),
+      };
+    });
+  };
+
+  const clearAllPreferredSubjects = () => {
+    setCurrentFaculty((prev) => ({
+      ...prev,
+      preferred_subjects: [],
+    }));
+  };
+
+  const selectedSubjects = useMemo(() => {
     const selectedIds = Array.isArray(currentFaculty.preferred_subjects) ? currentFaculty.preferred_subjects : [];
     return selectedIds
       .map((id) => subjects.find((subject) => String(subject.id) === String(id)))
-      .filter(Boolean)
-      .map((subject) => `${subject.code} - ${subject.name}`);
+      .filter(Boolean);
   }, [currentFaculty.preferred_subjects, subjects]);
 
   return (
-    <div className={`app ${showSubjectPicker ? 'subject-picker-open' : ''}`}>
+    <div className={`app ${showSubjectPicker || showDepartmentPicker ? 'subject-picker-open' : ''}`}>
       <Navbar />
       <div className="container page-content">
         <div className="page-header">
@@ -365,11 +448,12 @@ function Faculty() {
         </div>
 
         {showModal && (
-          <div className="modal">
-            <div className="modal-content">
+          <div className="modal" onClick={triggerFacultyModalAttention}>
+            <div className={`modal-content ${shakeMainModal ? 'modal-shake' : ''}`} onClick={(e) => e.stopPropagation()}>
               <div className="modal-header">
                 <h2>{currentFaculty.id ? 'Edit Faculty' : 'Add Faculty'}</h2>
               </div>
+              {mainModalPrompt && <p className="modal-focus-prompt">{mainModalPrompt}</p>}
               <form onSubmit={handleSubmit}>
                 <div className="form-group">
                   <label>Name</label>
@@ -413,20 +497,30 @@ function Faculty() {
                   <button
                     type="button"
                     className="faculty-subjects-picker-btn"
-                    onClick={() => setShowSubjectPicker(true)}
+                    onClick={openSubjectPicker}
                     disabled={!currentFaculty.department}
                   >
-                    {selectedSubjectLabels.length > 0
-                      ? `${selectedSubjectLabels.length} subject(s) selected`
+                    {selectedSubjects.length > 0
+                      ? `${selectedSubjects.length} subject(s) selected`
                       : 'Choose preferred subjects'}
                   </button>
                   {!currentFaculty.department && (
                     <p className="faculty-subjects-hint">Select a department first to load subject choices.</p>
                   )}
-                  {selectedSubjectLabels.length > 0 && (
+                  {selectedSubjects.length > 0 && (
                     <div className="faculty-selected-subjects">
-                      {selectedSubjectLabels.map((label) => (
-                        <span key={label} className="faculty-subject-tag">{label}</span>
+                      {selectedSubjects.map((subject) => (
+                        <span key={subject.id} className="faculty-subject-tag">
+                          {subject.code} - {subject.name}
+                          <button
+                            type="button"
+                            className="faculty-subject-tag-remove"
+                            onClick={() => toggleSubjectSelection(subject.id)}
+                            aria-label={`Remove ${subject.code}`}
+                          >
+                            ×
+                          </button>
+                        </span>
                       ))}
                     </div>
                   )}
@@ -443,34 +537,77 @@ function Faculty() {
         )}
 
         {showModal && showSubjectPicker && (
-          <div className="modal-overlay" onClick={() => setShowSubjectPicker(false)}>
-            <div className="modal-content faculty-subjects-picker-modal" onClick={(e) => e.stopPropagation()}>
+          <div className="modal-overlay" onClick={() => triggerPickerAttention('subject')}>
+            <div className={`modal-content faculty-subjects-picker-modal faculty-subjects-picker-modal-wide ${shakeSubjectPicker ? 'modal-shake' : ''}`} onClick={(e) => e.stopPropagation()}>
               <div className="modal-header">
                 <h2>Preferred Subjects</h2>
               </div>
+              {pickerPrompt && <p className="modal-focus-prompt">{pickerPrompt}</p>}
               <div className="faculty-subjects-picker-body">
                 <p className="faculty-subjects-hint">
                   Available subjects for <strong>{currentFaculty.department}</strong> (including common subjects):
                 </p>
+                <div className="faculty-subjects-picker-controls">
+                  <input
+                    type="text"
+                    className="faculty-subjects-search-input"
+                    placeholder="Search code, name, or department"
+                    value={subjectSearchTerm}
+                    onChange={(e) => setSubjectSearchTerm(e.target.value)}
+                  />
+                  <button type="button" className="btn btn-secondary faculty-picker-action-btn" onClick={selectAllVisibleSubjects}>
+                    Select Visible
+                  </button>
+                  <button type="button" className="btn btn-secondary faculty-picker-action-btn" onClick={clearAllPreferredSubjects}>
+                    Clear All
+                  </button>
+                </div>
+                <p className="faculty-subjects-count">Showing {filteredAvailableSubjects.length} / {availableSubjects.length} subjects</p>
                 {availableSubjects.length === 0 ? (
                   <p className="faculty-subjects-empty">No matching subjects found.</p>
+                ) : filteredAvailableSubjects.length === 0 ? (
+                  <p className="faculty-subjects-empty">No subjects match your search.</p>
                 ) : (
                   <div className="faculty-subjects-picker-list">
-                    {availableSubjects.map((subject) => (
-                      <label key={subject.id} className="faculty-subject-option">
-                        <input
-                          type="checkbox"
-                          checked={Array.isArray(currentFaculty.preferred_subjects) && currentFaculty.preferred_subjects.includes(String(subject.id))}
-                          onChange={() => toggleSubjectSelection(subject.id)}
-                        />
-                        <span>{subject.code} - {subject.name}</span>
-                      </label>
-                    ))}
+                    {groupedFilteredSubjects.matchedDepartment.length > 0 && (
+                      <>
+                        <p className="faculty-subject-group-title">Matched Department</p>
+                        {groupedFilteredSubjects.matchedDepartment.map((subject) => (
+                          <label key={subject.id} className="faculty-subject-option">
+                            <input
+                              type="checkbox"
+                              checked={Array.isArray(currentFaculty.preferred_subjects) && currentFaculty.preferred_subjects.includes(String(subject.id))}
+                              onChange={() => toggleSubjectSelection(subject.id)}
+                            />
+                            <span>{subject.code} - {subject.name}</span>
+                          </label>
+                        ))}
+                      </>
+                    )}
+
+                    {groupedFilteredSubjects.commonSubjects.length > 0 && (
+                      <>
+                        <p className="faculty-subject-group-title">Common Subjects</p>
+                        {groupedFilteredSubjects.commonSubjects.map((subject) => (
+                          <label key={subject.id} className="faculty-subject-option">
+                            <input
+                              type="checkbox"
+                              checked={Array.isArray(currentFaculty.preferred_subjects) && currentFaculty.preferred_subjects.includes(String(subject.id))}
+                              onChange={() => toggleSubjectSelection(subject.id)}
+                            />
+                            <span>{subject.code} - {subject.name}</span>
+                          </label>
+                        ))}
+                      </>
+                    )}
                   </div>
                 )}
               </div>
               <div className="modal-footer">
-                <button type="button" className="btn btn-primary" onClick={() => setShowSubjectPicker(false)}>
+                <button type="button" className="btn btn-primary" onClick={() => {
+                  setPickerPrompt('');
+                  setShowSubjectPicker(false);
+                }}>
                   Done
                 </button>
               </div>
@@ -479,11 +616,12 @@ function Faculty() {
         )}
 
         {showModal && showDepartmentPicker && (
-          <div className="modal-overlay" onClick={() => setShowDepartmentPicker(false)}>
-            <div className="modal-content faculty-subjects-picker-modal" onClick={(e) => e.stopPropagation()}>
+          <div className="modal-overlay" onClick={() => triggerPickerAttention('department')}>
+            <div className={`modal-content faculty-subjects-picker-modal ${shakeDepartmentPicker ? 'modal-shake' : ''}`} onClick={(e) => e.stopPropagation()}>
               <div className="modal-header">
                 <h2>Choose Department</h2>
               </div>
+              {pickerPrompt && <p className="modal-focus-prompt">{pickerPrompt}</p>}
               <div className="faculty-subjects-picker-body">
                 {departmentOptions.length === 0 ? (
                   <p className="faculty-subjects-empty">No departments available yet.</p>
@@ -508,7 +646,10 @@ function Faculty() {
                 )}
               </div>
               <div className="modal-footer">
-                <button type="button" className="btn btn-primary" onClick={() => setShowDepartmentPicker(false)}>
+                <button type="button" className="btn btn-primary" onClick={() => {
+                  setPickerPrompt('');
+                  setShowDepartmentPicker(false);
+                }}>
                   Done
                 </button>
               </div>
