@@ -966,6 +966,47 @@
   font-weight: 500;
 }
 
+.password-guidelines {
+  margin: 10px 0 0;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid #dce7f6;
+  background: #f7fbff;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.password-guidelines li,
+.email-guide {
+  margin: 0;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.guide-check {
+  width: 14px;
+  text-align: center;
+  font-weight: 700;
+}
+
+.password-guidelines .met,
+.email-guide.met {
+  color: #1c7a45;
+}
+
+.password-guidelines .unmet,
+.email-guide.unmet {
+  color: #6d7f97;
+}
+
+.email-guide {
+  margin-top: 8px;
+}
+
 @media (max-width: 768px) {
   .schedule-config-grid {
     grid-template-columns: 1fr;

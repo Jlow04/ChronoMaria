@@ -45,6 +45,25 @@ function Settings() {
   const [shakeConfirmationModal, setShakeConfirmationModal] = useState(false);
   const [shakeDeleteModal, setShakeDeleteModal] = useState(false);
 
+  const smuEmailPattern = /^hed-[a-z0-9._-]{2,}@smu\.edu\.ph$/i;
+  const trimmedEmail = formData.email.trim();
+  const passwordChecks = {
+    minLength: formData.password.length >= 8,
+    hasUppercase: /[A-Z]/.test(formData.password),
+    hasLowercase: /[a-z]/.test(formData.password),
+    hasNumber: /\d/.test(formData.password),
+    hasSpecial: /[^A-Za-z0-9]/.test(formData.password),
+  };
+  const isPasswordStrong = Object.values(passwordChecks).every(Boolean);
+  const isPasswordMatch = formData.password !== '' && formData.password === formData.confirmPassword;
+  const isSmuEmailValid = smuEmailPattern.test(trimmedEmail);
+  const canSubmitCreateUser =
+    !loading &&
+    formData.username.trim() !== '' &&
+    isPasswordStrong &&
+    isPasswordMatch &&
+    isSmuEmailValid;
+
   // Get current user from localStorage
   const getCurrentUser = () => {
     try {
@@ -112,15 +131,23 @@ function Settings() {
 
   const handleCreateUser = async (e) => {
     e.preventDefault();
+    if (!isPasswordStrong) {
+      showConfirmation('error', 'Password does not meet all required guidelines.');
+      return;
+    }
     if (formData.password !== formData.confirmPassword) {
       showConfirmation('error', 'Passwords do not match!');
+      return;
+    }
+    if (!isSmuEmailValid) {
+      showConfirmation('error', 'Please enter a valid SMU corporate email (hed-__@smu.edu.ph).');
       return;
     }
     try {
       setLoading(true);
       setError('');
       const currentUsername = getCurrentUser();
-      await userService.create(formData.username, formData.password, formData.email, currentUsername);
+      await userService.create(formData.username, formData.password, trimmedEmail, currentUsername);
       showConfirmation('success', 'User created successfully!');
       setFormData({ username: '', password: '', confirmPassword: '', email: '' });
       // Reload users list if it's expanded
@@ -308,7 +335,7 @@ function Settings() {
   };
 
   return (
-    <>
+    <div className="app">
       <Navbar />
       <div className="settings-container page-content">
         <div className="settings-header">
@@ -445,6 +472,28 @@ function Settings() {
                             )}
                           </button>
                         </div>
+                        <ul className="password-guidelines" aria-live="polite">
+                          <li className={passwordChecks.minLength ? 'met' : 'unmet'}>
+                            <span className="guide-check">{passwordChecks.minLength ? '✓' : '○'}</span>
+                            At least 8 characters
+                          </li>
+                          <li className={passwordChecks.hasUppercase ? 'met' : 'unmet'}>
+                            <span className="guide-check">{passwordChecks.hasUppercase ? '✓' : '○'}</span>
+                            At least 1 uppercase letter
+                          </li>
+                          <li className={passwordChecks.hasLowercase ? 'met' : 'unmet'}>
+                            <span className="guide-check">{passwordChecks.hasLowercase ? '✓' : '○'}</span>
+                            At least 1 lowercase letter
+                          </li>
+                          <li className={passwordChecks.hasNumber ? 'met' : 'unmet'}>
+                            <span className="guide-check">{passwordChecks.hasNumber ? '✓' : '○'}</span>
+                            At least 1 number
+                          </li>
+                          <li className={passwordChecks.hasSpecial ? 'met' : 'unmet'}>
+                            <span className="guide-check">{passwordChecks.hasSpecial ? '✓' : '○'}</span>
+                            At least 1 special character
+                          </li>
+                        </ul>
                       </div>
                       <div className="form-group">
                         <label htmlFor="confirmPassword">Confirm Password</label>
@@ -489,10 +538,15 @@ function Settings() {
                           name="email"
                           value={formData.email}
                           onChange={handleInputChange}
-                          placeholder="Enter email" 
+                          placeholder="hed-__@smu.edu.ph"
+                          required
                         />
+                        <p className={`email-guide ${isSmuEmailValid ? 'met' : 'unmet'}`}>
+                          <span className="guide-check">{isSmuEmailValid ? '✓' : '○'}</span>
+                          Must match SMU corporate format: hed-__@smu.edu.ph
+                        </p>
                       </div>
-                      <button type="submit" className="btn btn-primary" disabled={loading || formData.password !== formData.confirmPassword || !formData.password}>
+                      <button type="submit" className="btn btn-primary" disabled={!canSubmitCreateUser}>
                         {loading ? 'Creating...' : 'Create User'}
                       </button>
                     </form>
@@ -763,7 +817,7 @@ function Settings() {
           </div>
         )}
       </div>
-    </>
+    </div>
   );
 }
 

@@ -2,6 +2,49 @@ const User = require('../models/User');
 const AuditLog = require('../models/AuditLog');
 const bcrypt = require('bcrypt');
 
+const extractClientIp = (req) => {
+  const forwardedFor = req.headers['x-forwarded-for'];
+  const candidate = Array.isArray(forwardedFor)
+    ? forwardedFor[0]
+    : (forwardedFor || '').split(',')[0].trim();
+  let ip = candidate || req.socket?.remoteAddress || req.ip || 'unknown';
+  if (ip.startsWith('::ffff:')) {
+    ip = ip.replace('::ffff:', '');
+  }
+  if (ip === '::1') {
+    ip = '127.0.0.1';
+  }
+  return ip;
+};
+
+const buildLoginAuditDetails = (ip) => {
+  return `User logged in to their account (IP: ${ip})`;
+};
+
+const safeUserPayload = (user) => {
+  const { password_hash: _, ...userWithoutPassword } = user;
+  return userWithoutPassword;
+};
+
+const completeLoginResponse = async ({ user, username, ip, res }) => {
+  try {
+    await AuditLog.create({
+      admin_username: username,
+      action: 'USER_LOGIN',
+      target_username: username,
+      details: buildLoginAuditDetails(ip),
+      created_at: new Date().toISOString(),
+    });
+  } catch (auditError) {
+    console.error(`Failed to log login audit event for user ${username}:`, auditError);
+  }
+
+  return res.json({
+    message: 'Login successful',
+    user: safeUserPayload(user),
+  });
+};
+
 exports.login = async (req, res) => {
   try {
     const { username, password } = req.body;
@@ -10,11 +53,11 @@ exports.login = async (req, res) => {
       return res.status(400).json({ error: 'Username and password are required' });
     }
 
-    console.log('🔐 Login attempt received');
+    console.log('Login attempt received');
     
     const user = await User.getByUsername(username);
     if (!user) {
-      console.log('❌ User not found');
+      console.log('User not found');
       return res.status(401).json({ error: 'Invalid username or password' });
     }
 
@@ -24,38 +67,18 @@ exports.login = async (req, res) => {
     const isPasswordValid = await bcrypt.compare(password, user.password_hash);
     
     if (!isPasswordValid) {
-      console.log(`❌ Password mismatch`);
+      console.log('Password mismatch');
       return res.status(401).json({ error: 'Invalid username or password' });
     }
 
     // Check if user is active
     if (!user.is_active) {
-      console.log('❌ User account is inactive');
+      console.log('User account is inactive');
       return res.status(403).json({ error: 'User must ask for Authorization' });
     }
 
-    console.log('✅ Login successful');
-
-    // Don't return password_hash
-    const { password_hash: _, ...userWithoutPassword } = user;
-
-    // Log audit event for login
-    try {
-      const auditResult = await AuditLog.create({
-        admin_username: username,
-        action: 'USER_LOGIN',
-        target_username: username,
-        details: `User logged in to their account`,
-        created_at: new Date().toISOString()
-      });
-    } catch (auditError) {
-      console.error(`❌ Failed to log login audit event for user ${username}:`, auditError);
-    }
-
-    res.json({
-      message: 'Login successful',
-      user: userWithoutPassword
-    });
+    const currentIp = extractClientIp(req);
+    return completeLoginResponse({ user, username, ip: currentIp, res });
   } catch (error) {
     console.error('Login error:', error);
     res.status(500).json({ error: error.message || 'Login failed' });

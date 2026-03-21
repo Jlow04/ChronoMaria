@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { userService } from '../services/api';
 import './Login.css';
 import logoNoBg from '../assets/LogoNoBg.png';
@@ -11,12 +11,27 @@ function Login() {
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [info, setInfo] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
+
+  useEffect(() => {
+    if (location.state?.reason === 'idle-timeout') {
+      setInfo('You were logged out due to inactivity. Please log in again.');
+      navigate('/login', { replace: true, state: {} });
+    }
+  }, [location.state, navigate]);
+
+  const finalizeLogin = (user) => {
+    localStorage.setItem('user', JSON.stringify(user));
+    navigate('/dashboard');
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    setInfo('');
     setLoading(true);
 
     try {
@@ -24,10 +39,7 @@ function Login() {
         credentials.username,
         credentials.password
       );
-      
-      // TODO: Store user info in localStorage/context
-      localStorage.setItem('user', JSON.stringify(response.user));
-      navigate('/dashboard');
+      finalizeLogin(response.user);
     } catch (err) {
       const errorMessage = err.response?.data?.error || err.message || 'Login failed';
       setError(errorMessage);
@@ -44,6 +56,7 @@ function Login() {
           <img src={logoNoBg} alt="ChronoMaria" className="login-logo" />
           <p>Faculty Loading Automation System</p>
         </div>
+        {info && <div className="info-message">{info}</div>}
         {error && <div className="error-message">{error}</div>}
         <form onSubmit={handleSubmit}>
           <div className="form-group">

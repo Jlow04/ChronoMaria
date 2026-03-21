@@ -252,6 +252,48 @@ button[type='submit'].btn-primary:active {
     0 8px 14px rgba(58, 109, 178, 0.26);
 }
 
+.btn.btn-secondary {
+  width: 100%;
+  margin-top: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 13px 20px;
+  border-radius: 14px;
+  border: 1px solid rgba(148, 174, 206, 0.8);
+  background: linear-gradient(180deg, rgba(242, 247, 255, 0.9) 0%, rgba(218, 231, 249, 0.85) 100%);
+  color: #264d7f;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.btn.btn-secondary:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+
+.btn:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+.info-message {
+  margin-bottom: 14px;
+  padding: 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(132, 190, 255, 0.8);
+  background: rgba(229, 243, 255, 0.88);
+  color: #1c4f84;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.help-text {
+  margin-top: 8px;
+  color: #355e8e;
+  font-size: 13px;
+}
+
 @media (max-width: 768px) {
   .login-card {
     max-width: 100%;
