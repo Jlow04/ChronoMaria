@@ -62,3 +62,18 @@ best_schedule, fitness, generations = ga.run()
 2. Rooms cannot be double-booked
 3. Faculty workload should be balanced
 4. Time slots must be valid
+5. Room assignments prefer eligible rooms only:
+    - `status = Available`
+    - Department-compatible unless `common_room/is_common_room = true`
+    - Subject/room type compatibility using `subject_type`, `room_type`, and `type` (with safe fallback)
+
+## Test Scenarios (API)
+
+Run the integrated backend + GA scenario checks from PowerShell:
+
+```powershell
+cd c:\Users\hp\Desktop\ChronoMaria\backend
+powershell -ExecutionPolicy Bypass -File .\test-scenarios.ps1
+```
+
+This includes generation and validation checks that exercise the genetic algorithm service through the backend API.

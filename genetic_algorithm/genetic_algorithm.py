@@ -21,6 +21,7 @@ class GeneticAlgorithm:
 
         self.faculty_by_id = {member.get('id'): member for member in self.faculty if member.get('id') is not None}
         self.subject_by_id = {subject.get('id'): subject for subject in self.subjects if subject.get('id') is not None}
+        self.room_by_id = {room.get('id'): room for room in self.rooms if room.get('id') is not None}
         self.faculty_by_department = {}
         for member in self.faculty:
             dept = self._normalize_department(member.get('department'))
@@ -84,6 +85,86 @@ class GeneticAlgorithm:
             'information technology': 'information technology',
         }
         return aliases.get(text, text)
+
+    def _room_code(self, room: Dict) -> str:
+        return room.get('room_code') or room.get('room_number') or 'TBA'
+
+    def _is_room_available(self, room: Dict) -> bool:
+        status = str(room.get('status') or 'Available').strip().lower()
+        return status == 'available'
+
+    def _is_common_room(self, room: Dict) -> bool:
+        return bool(room.get('is_common_room') or room.get('common_room'))
+
+    def _room_department(self, room: Dict) -> str:
+        return self._normalize_department(room.get('room_department') or room.get('department'))
+
+    def _subject_required_type(self, subject: Dict) -> str:
+        # Explicit subject_type wins. If absent, infer "lab" from subject name/code.
+        explicit_type = str(subject.get('subject_type') or '').strip().lower()
+        if explicit_type:
+            return explicit_type
+
+        name = str(subject.get('name') or '').strip().lower()
+        code = str(subject.get('code') or subject.get('CODE') or subject.get('course_no') or subject.get('Course_No.') or '').strip().lower()
+        if 'lab' in name or 'lab' in code:
+            return 'lab'
+
+        return ''
+
+    def _room_type_text(self, room: Dict) -> str:
+        return str(room.get('subject_type') or room.get('room_type') or room.get('type') or '').strip().lower()
+
+    def _matches_subject_type(self, room: Dict, subject: Dict) -> bool:
+        required = self._subject_required_type(subject)
+        if not required:
+            return True
+
+        room_type = self._room_type_text(room)
+        if not room_type:
+            return True
+
+        # Handle both coarse and specific labels (e.g., "lab", "computer lab").
+        return required in room_type or room_type in required
+
+    def _matches_department(self, room: Dict, subject: Dict) -> bool:
+        if self._is_common_room(room):
+            return True
+
+        room_dept = self._room_department(room)
+        subject_dept = self._normalize_department(subject.get('department'))
+        if not room_dept or not subject_dept:
+            return True
+
+        return room_dept == subject_dept
+
+    def _is_eligible_room(self, room: Dict, subject: Dict) -> bool:
+        return (
+            self._is_room_available(room)
+            and self._matches_department(room, subject)
+            and self._matches_subject_type(room, subject)
+        )
+
+    def _eligible_rooms_for_subject(self, subject: Dict) -> List[Dict]:
+        if not self.rooms:
+            return []
+
+        # Prefer strict eligibility; degrade safely when data is sparse.
+        strict = [room for room in self.rooms if self._is_eligible_room(room, subject)]
+        if strict:
+            return strict
+
+        available = [room for room in self.rooms if self._is_room_available(room)]
+        if available:
+            return available
+
+        return self.rooms
+
+    def _pick_room_for_subject(self, subject: Dict) -> Dict:
+        candidates = self._eligible_rooms_for_subject(subject)
+        if not candidates:
+            return {}
+        return random.choice(candidates)
 
     def _faculty_candidates_for_subject(self, subject: Dict) -> List[Dict]:
         subject_dept = self._normalize_department(subject.get('department'))
@@ -174,6 +255,14 @@ class GeneticAlgorithm:
 
                 repaired[idx] = gene
 
+            assigned_room = self.room_by_id.get(gene.get('room_id'), {})
+            if not self._is_eligible_room(assigned_room, subject):
+                chosen_room = self._pick_room_for_subject(subject)
+                gene['room'] = self._room_code(chosen_room)
+                gene['room_id'] = chosen_room.get('id')
+
+                repaired[idx] = gene
+
         return repaired
     
     def create_individual(self) -> List[Dict]:
@@ -183,7 +272,7 @@ class GeneticAlgorithm:
         for subject in self.subjects:
             candidates = self._faculty_candidates_for_subject(subject)
             chosen_faculty = self._pick_faculty_for_subject(subject, candidates, units_by_faculty)
-            chosen_room = random.choice(self.rooms) if self.rooms else {}
+            chosen_room = self._pick_room_for_subject(subject)
 
             fid = chosen_faculty.get('id')
             if fid is not None:
@@ -194,7 +283,7 @@ class GeneticAlgorithm:
                 'subject_id': subject.get('id'),
                 'faculty': chosen_faculty.get('name', 'TBA'),
                 'faculty_id': chosen_faculty.get('id'),
-                'room': chosen_room.get('room_number', 'TBA'),
+                'room': self._room_code(chosen_room),
                 'room_id': chosen_room.get('id'),
                 'day': random.choice(self.days),
                 'time': random.choice(self.time_slots)
@@ -249,6 +338,15 @@ class GeneticAlgorithm:
             if key in room_schedule:
                 fitness -= 10  # Penalty for room conflict
             room_schedule[key] = True
+
+            subject = self.subject_by_id.get(gene.get('subject_id'), {})
+            room = self.room_by_id.get(gene.get('room_id'), {})
+            if not self._is_room_available(room):
+                fitness -= 40
+            if not self._matches_department(room, subject):
+                fitness -= 15
+            if not self._matches_subject_type(room, subject):
+                fitness -= 15
         
         # Check faculty workload (simplified)
         faculty_load = {}
@@ -272,12 +370,6 @@ class GeneticAlgorithm:
             if faculty_dept and subject_dept and faculty_dept != subject_dept:
                 fitness -= 20
 
-            # Penalize assignments outside stated faculty preferred subjects (if provided).
-            strict_candidates = self._strict_faculty_candidates_for_subject(subject)
-            preferred_exists = any(self._is_preferred_match(member, subject) for member in strict_candidates)
-            if preferred_exists and not self._is_preferred_match(faculty, subject):
-                fitness -= 6
-        
         # Penalize unbalanced workload
         if faculty_load:
             max_load = max(faculty_load.values())
@@ -334,8 +426,9 @@ class GeneticAlgorithm:
                     gene['faculty'] = new_faculty.get('name', 'Unknown')
                     gene['faculty_id'] = new_faculty.get('id')
                 elif mutation_type == 'room' and self.rooms:
-                    new_room = random.choice(self.rooms)
-                    gene['room'] = new_room.get('room_number', 'TBA')
+                    subject = self.subject_by_id.get(gene.get('subject_id'), {})
+                    new_room = self._pick_room_for_subject(subject)
+                    gene['room'] = self._room_code(new_room)
                     gene['room_id'] = new_room.get('id')
                 elif mutation_type == 'time':
                     gene['time'] = random.choice(self.time_slots)
@@ -369,6 +462,9 @@ class GeneticAlgorithm:
         # ── Room conflicts (same room, same day+time) ─────────────────────────
         room_seen = {}
         room_conflicts = []
+        room_status_issues = []
+        room_department_mismatches = []
+        room_type_mismatches = []
         for gene in individual:
             key = f"{gene.get('room_id')}_{gene.get('day')}_{gene.get('time')}"
             if key in room_seen:
@@ -380,6 +476,29 @@ class GeneticAlgorithm:
                 })
             else:
                 room_seen[key] = gene.get('subject')
+
+            subject = self.subject_by_id.get(gene.get('subject_id'), {})
+            room = self.room_by_id.get(gene.get('room_id'), {})
+            if not self._is_room_available(room):
+                room_status_issues.append({
+                    "subject": gene.get('subject'),
+                    "room": gene.get('room'),
+                    "status": room.get('status', 'Unknown')
+                })
+            if not self._matches_department(room, subject):
+                room_department_mismatches.append({
+                    "subject": gene.get('subject'),
+                    "subject_dept": self._normalize_department(subject.get('department')),
+                    "room": gene.get('room'),
+                    "room_dept": self._room_department(room)
+                })
+            if not self._matches_subject_type(room, subject):
+                room_type_mismatches.append({
+                    "subject": gene.get('subject'),
+                    "required_subject_type": self._subject_required_type(subject),
+                    "room": gene.get('room'),
+                    "room_type": self._room_type_text(room)
+                })
 
         # ── Department mismatches, unqualified & non-preferred assignments ─────
         dept_mismatches = []
@@ -449,15 +568,29 @@ class GeneticAlgorithm:
         # ── Penalty breakdown (mirrors calculate_fitness logic) ───────────────
         pen_faculty    = len(faculty_conflicts)  * 10
         pen_room       = len(room_conflicts)     * 10
+        pen_room_status = len(room_status_issues) * 40
+        pen_room_dept  = len(room_department_mismatches) * 15
+        pen_room_type  = len(room_type_mismatches) * 15
         pen_dept       = len(dept_mismatches)    * 20
         pen_unqualified = len(unqualified_assignments) * 50
-        pen_nonpref    = len(non_preferred_assignments) * (20 + 6)
+        pen_nonpref    = len(non_preferred_assignments) * 20
         pen_overload   = sum(
             (e['total_units'] - e['max_units']) * (15 if (e['total_units'] - e['max_units']) >= 3 else 8)
             for e in overloaded
         )
         pen_imbalance  = 5 if load_imbalance else 0
-        total_penalty  = pen_faculty + pen_room + pen_dept + pen_unqualified + pen_nonpref + pen_overload + pen_imbalance
+        total_penalty  = (
+            pen_faculty
+            + pen_room
+            + pen_room_status
+            + pen_room_dept
+            + pen_room_type
+            + pen_dept
+            + pen_unqualified
+            + pen_nonpref
+            + pen_overload
+            + pen_imbalance
+        )
         base_fitness   = 100.0 + len(individual) * 20.0
 
         # ── Quality label ─────────────────────────────────────────────────────
@@ -485,6 +618,12 @@ class GeneticAlgorithm:
                 "faculty_conflict_count":  len(faculty_conflicts),
                 "room_conflicts":          room_conflicts,
                 "room_conflict_count":     len(room_conflicts),
+                "room_status_issues":      room_status_issues,
+                "room_status_issue_count": len(room_status_issues),
+                "room_department_mismatches": room_department_mismatches,
+                "room_department_mismatch_count": len(room_department_mismatches),
+                "room_type_mismatches":    room_type_mismatches,
+                "room_type_mismatch_count": len(room_type_mismatches),
                 "dept_mismatches":         dept_mismatches,
                 "dept_mismatch_count":     len(dept_mismatches),
                 "unqualified_assignments": unqualified_assignments,
@@ -500,6 +639,9 @@ class GeneticAlgorithm:
                 "total_penalty":           total_penalty,
                 "penalty_faculty_conflicts": pen_faculty,
                 "penalty_room_conflicts":  pen_room,
+                "penalty_room_status":     pen_room_status,
+                "penalty_room_department": pen_room_dept,
+                "penalty_room_type":       pen_room_type,
                 "penalty_dept_mismatches": pen_dept,
                 "penalty_unqualified":     pen_unqualified,
                 "penalty_non_preferred":   pen_nonpref,

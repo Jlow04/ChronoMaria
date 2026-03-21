@@ -262,12 +262,12 @@ function Schedule() {
 
       const subjectByName = new Map(subjects.map((subject) => [subject.name, subject]));
       const facultyByName = new Map(faculty.map((member) => [member.name, member]));
-      const roomByNumber = new Map(rooms.map((room) => [room.room_number, room]));
+      const roomByCode = new Map(rooms.map((room) => [room.room_code || room.room_number, room]));
 
       const enrichedSchedule = (result.schedule || []).map((item, index) => {
         const subject = subjectByName.get(item.subject) || {};
         const facultyMember = facultyByName.get(item.faculty) || {};
-        const room = roomByNumber.get(item.room) || {};
+        const room = roomByCode.get(item.room) || {};
         const groupedSchedule = formatScheduleByTrack(item.day, item.time);
 
         return {
@@ -366,7 +366,7 @@ function Schedule() {
 
           <div className="schedule-profile-card">
             <h3><FaWandMagicSparkles style={{marginRight: '8px', marginTop: '-2px'}} />Active Schedule Profile</h3>
-            <p>These values are managed from Settings > Schedule Configuration.</p>
+            <p>These values are managed from Settings &gt; Schedule Configuration.</p>
             <div className="schedule-profile-grid">
               <div>
                 <span><FaTachometerAlt style={{marginRight: '6px'}} />Max Generations</span>

@@ -259,6 +259,25 @@ c:/python314/python.exe server.py
 
 ---
 
+## ✅ Test Scenarios
+
+After services are running, execute the API scenario suite from PowerShell:
+
+```powershell
+cd c:\Users\hp\Desktop\ChronoMaria\backend
+powershell -ExecutionPolicy Bypass -File .\test-scenarios.ps1
+```
+
+This validates:
+- Source data availability (faculty, subjects, rooms)
+- Schedule generation success
+- Constraint clamping behavior
+- Payload validation errors
+- Faculty and room conflict detection
+- Stateless contract (`/schedule/count` and `/schedule/master` return 404)
+
+---
+
 ### 🌐 Access the Application
 
 Once all three services are running:

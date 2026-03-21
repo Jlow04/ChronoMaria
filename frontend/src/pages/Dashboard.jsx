@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { FaChalkboardTeacher } from 'react-icons/fa';
 import { FaBookOpen, FaCalendarCheck, FaDoorOpen, FaSignal, FaWandMagicSparkles } from 'react-icons/fa6';
 import Navbar from '../components/Navbar';
-import { facultyService, subjectService, roomService, scheduleService } from '../services/api';
+import { facultyService, subjectService, roomService } from '../services/api';
 import './Dashboard.css';
 
 function Dashboard() {
@@ -27,13 +27,11 @@ function Dashboard() {
         roomService.getAll()
       ]);
 
-      const scheduleCount = await scheduleService.count();
-
       setStats({
         facultyCount: faculty.length,
         subjectsCount: subjects.length,
         roomsCount: rooms.length,
-        schedulesCount: scheduleCount.count || 0,
+        schedulesCount: 0,
         loading: false
       });
     } catch (error) {

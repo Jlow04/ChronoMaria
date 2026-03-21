@@ -5,10 +5,14 @@ import { roomService } from '../services/api';
 import './Rooms.css';
 
 const emptyRoom = {
-  room_number: '',
-  building: '',
+  room_code: '',
+  description: '',
   capacity: '',
-  type: ''
+  department: '',
+  room_type: '',
+  subject_type: '',
+  status: 'Available',
+  common_room: false,
 };
 
 function Rooms() {
@@ -19,7 +23,7 @@ function Rooms() {
   const [currentRoom, setCurrentRoom] = useState(emptyRoom);
   const [searchTerm, setSearchTerm] = useState('');
   const [typeFilter, setTypeFilter] = useState('all');
-  const [sortKey, setSortKey] = useState('room_number');
+  const [sortKey, setSortKey] = useState('room_code');
   const [sortDirection, setSortDirection] = useState('asc');
   const [modalPrompt, setModalPrompt] = useState('');
   const [shakeMainModal, setShakeMainModal] = useState(false);
@@ -79,7 +83,7 @@ function Rooms() {
   };
 
   const roomTypes = useMemo(() => {
-    return Array.from(new Set(rooms.map((item) => String(item.type || '').trim()).filter(Boolean))).sort((a, b) => a.localeCompare(b));
+    return Array.from(new Set(rooms.map((item) => String(item.room_type || item.type || '').trim()).filter(Boolean))).sort((a, b) => a.localeCompare(b));
   }, [rooms]);
 
   const totalCapacity = useMemo(() => {
@@ -87,7 +91,7 @@ function Rooms() {
   }, [rooms]);
 
   const labRooms = useMemo(() => {
-    return rooms.filter((item) => String(item.type || '').toLowerCase().includes('lab')).length;
+    return rooms.filter((item) => String(item.room_type || item.type || '').toLowerCase().includes('lab')).length;
   }, [rooms]);
 
   const filteredRooms = useMemo(() => {
@@ -96,9 +100,12 @@ function Rooms() {
     const filtered = rooms.filter((item) => {
       const matchesSearch = !keyword
         || String(item.room_number || '').toLowerCase().includes(keyword)
-        || String(item.building || '').toLowerCase().includes(keyword)
-        || String(item.type || '').toLowerCase().includes(keyword);
-      const matchesType = typeFilter === 'all' || item.type === typeFilter;
+        || String(item.room_code || '').toLowerCase().includes(keyword)
+        || String(item.building || item.description || '').toLowerCase().includes(keyword)
+        || String(item.type || item.room_type || '').toLowerCase().includes(keyword)
+        || String(item.room_department || item.department || '').toLowerCase().includes(keyword)
+        || String(item.subject_type || '').toLowerCase().includes(keyword);
+      const matchesType = typeFilter === 'all' || (item.room_type || item.type) === typeFilter;
       return matchesSearch && matchesType;
     });
 
@@ -172,7 +179,7 @@ function Rooms() {
                 id="rooms-search"
                 type="text"
                 className="rooms-search-input"
-                placeholder="Search room number, building, or type"
+                placeholder="Search room code, description, or type"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
@@ -199,10 +206,10 @@ function Rooms() {
                 value={sortKey}
                 onChange={(e) => setSortKey(e.target.value)}
               >
-                <option value="room_number">Room Number</option>
-                <option value="building">Building</option>
+                <option value="room_code">Room Code</option>
+                <option value="building">Description</option>
                 <option value="capacity">Capacity</option>
-                <option value="type">Type</option>
+                <option value="room_type">Room Type</option>
               </select>
             </div>
 
@@ -227,29 +234,37 @@ function Rooms() {
             <table className="table">
               <thead>
                 <tr>
-                  <th>Room Number</th>
-                  <th>Building</th>
+                  <th>Room Code</th>
+                  <th>Description</th>
                   <th>Capacity</th>
-                  <th>Type</th>
+                  <th>Department</th>
+                  <th>Room Type</th>
+                  <th>Subject Type</th>
+                  <th>Status</th>
+                  <th>Common Room</th>
                   <th>Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {loading ? (
                   <tr>
-                    <td colSpan="5" className="rooms-empty-cell">Loading rooms...</td>
+                    <td colSpan="9" className="rooms-empty-cell">Loading rooms...</td>
                   </tr>
                 ) : filteredRooms.length === 0 ? (
                   <tr>
-                    <td colSpan="5" className="rooms-empty-cell">No rooms match your current filters.</td>
+                    <td colSpan="9" className="rooms-empty-cell">No rooms match your current filters.</td>
                   </tr>
                 ) : (
                   filteredRooms.map((item) => (
                     <tr key={item.id}>
-                      <td>{item.room_number}</td>
-                      <td>{item.building}</td>
+                      <td>{item.room_code || item.room_number}</td>
+                      <td>{item.description || item.building}</td>
                       <td>{item.capacity}</td>
-                      <td>{item.type}</td>
+                      <td>{item.department || item.room_department || '-'}</td>
+                      <td>{item.room_type || item.type || '-'}</td>
+                      <td>{item.subject_type || '-'}</td>
+                      <td>{item.status || 'Available'}</td>
+                      <td>{item.common_room || item.is_common_room ? 'Yes' : 'No'}</td>
                       <td className="rooms-actions-cell">
                         <button className="btn btn-secondary" onClick={() => handleEdit(item)}>Edit</button>
                         <button className="btn btn-danger" onClick={() => handleDelete(item.id)}>Delete</button>
@@ -271,20 +286,20 @@ function Rooms() {
               {modalPrompt && <p className="modal-focus-prompt">{modalPrompt}</p>}
               <form onSubmit={handleSubmit}>
                 <div className="form-group">
-                  <label>Room Number</label>
+                  <label>Room Code</label>
                   <input
                     type="text"
-                    value={currentRoom.room_number}
-                    onChange={(e) => setCurrentRoom({ ...currentRoom, room_number: e.target.value })}
+                    value={currentRoom.room_code || currentRoom.room_number || ''}
+                    onChange={(e) => setCurrentRoom({ ...currentRoom, room_code: e.target.value, room_number: e.target.value })}
                     required
                   />
                 </div>
                 <div className="form-group">
-                  <label>Building</label>
+                  <label>Description</label>
                   <input
                     type="text"
-                    value={currentRoom.building}
-                    onChange={(e) => setCurrentRoom({ ...currentRoom, building: e.target.value })}
+                    value={currentRoom.description || currentRoom.building || ''}
+                    onChange={(e) => setCurrentRoom({ ...currentRoom, description: e.target.value, building: e.target.value })}
                     required
                   />
                 </div>
@@ -298,17 +313,85 @@ function Rooms() {
                   />
                 </div>
                 <div className="form-group">
-                  <label>Type</label>
+                  <label>Department</label>
+                  <input
+                    type="text"
+                    value={currentRoom.department || currentRoom.room_department || ''}
+                    onChange={(e) => setCurrentRoom({ ...currentRoom, department: e.target.value, room_department: e.target.value })}
+                    disabled={Boolean(currentRoom.common_room || currentRoom.is_common_room)}
+                    placeholder={Boolean(currentRoom.common_room || currentRoom.is_common_room) ? 'Any department (common room)' : 'e.g., Computer Science'}
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Room Type</label>
                   <select
-                    value={currentRoom.type}
-                    onChange={(e) => setCurrentRoom({ ...currentRoom, type: e.target.value })}
+                    value={currentRoom.room_type || currentRoom.type || ''}
+                    onChange={(e) => setCurrentRoom({ ...currentRoom, room_type: e.target.value, type: e.target.value })}
                     required
                   >
-                    <option value="">Select Type</option>
-                    <option value="Lecture Hall">Lecture Hall</option>
+                    <option value="">Select Room Type</option>
+                    <option value="Lecture Room">Lecture Room</option>
                     <option value="Laboratory">Laboratory</option>
                     <option value="Computer Lab">Computer Lab</option>
-                    <option value="Classroom">Classroom</option>
+                    <option value="Biology Lab">Biology Lab</option>
+                    <option value="Engineering Lab">Engineering Lab</option>
+                    <option value="Physics Lab">Physics Lab</option>
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label>Subject Type</label>
+                  <select
+                    value={currentRoom.subject_type || ''}
+                    onChange={(e) => setCurrentRoom({ ...currentRoom, subject_type: e.target.value })}
+                    required
+                  >
+                    <option value="">Select Subject Type</option>
+                    <option value="Lecture Room">Lecture Room</option>
+                    <option value="Computer Lab">Computer Lab</option>
+                    <option value="Biology Lab">Biology Lab</option>
+                    <option value="Engineering Lab">Engineering Lab</option>
+                    <option value="Physics Lab">Physics Lab</option>
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label>Status</label>
+                  <select
+                    value={currentRoom.status || 'Available'}
+                    onChange={(e) => setCurrentRoom({ ...currentRoom, status: e.target.value })}
+                    required
+                  >
+                    <option value="Available">Available</option>
+                    <option value="Unavailable">Unavailable</option>
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label>
+                    <input
+                      type="checkbox"
+                      checked={Boolean(currentRoom.common_room || currentRoom.is_common_room)}
+                      onChange={(e) => setCurrentRoom({
+                        ...currentRoom,
+                        common_room: e.target.checked,
+                        is_common_room: e.target.checked,
+                        department: e.target.checked ? '' : currentRoom.department,
+                        room_department: e.target.checked ? '' : currentRoom.room_department,
+                      })}
+                    />{' '}
+                    Common Room (if checked, can be used by any department)
+                  </label>
+                </div>
+                <div className="form-group">
+                  <label>
+                    Legacy Type (optional)
+                  </label>
+                  <select
+                    value={currentRoom.type || currentRoom.room_type || ''}
+                    onChange={(e) => setCurrentRoom({ ...currentRoom, type: e.target.value, room_type: e.target.value })}
+                  >
+                    <option value="">Auto from Room Type</option>
+                    <option value="Lecture Room">Lecture Room</option>
+                    <option value="Laboratory">Laboratory</option>
+                    <option value="Computer Lab">Computer Lab</option>
                   </select>
                 </div>
                 <div className="modal-footer">

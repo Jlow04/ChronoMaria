@@ -46,6 +46,46 @@ SERVICES: list[tuple[str, Path, list[str]]] = [
 ]
 
 
+def _free_port_windows(port: int, service_name: str) -> None:
+    """Free a listening TCP port on Windows by terminating owning process(es)."""
+    ps_cmd = (
+        "$conn = Get-NetTCPConnection -LocalPort "
+        f"{port} -State Listen -ErrorAction SilentlyContinue; "
+        "if ($conn) { $conn.OwningProcess }"
+    )
+
+    result = subprocess.run(
+        ["powershell", "-NoProfile", "-Command", ps_cmd],
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+    )
+
+    pid_text = (result.stdout or "").strip()
+    if not pid_text:
+        return
+
+    pids = sorted({line.strip() for line in pid_text.splitlines() if line.strip().isdigit()})
+    for pid in pids:
+        print(f"{service_name} port {port} is in use. Stopping PID {pid}...", flush=True)
+        subprocess.run(
+            ["taskkill", "/PID", pid, "/F"],
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+        )
+
+
+def preflight_ports() -> None:
+    """Free known local ports before startup to avoid EADDRINUSE failures."""
+    if sys.platform.startswith("win"):
+        _free_port_windows(5000, "Backend")
+        _free_port_windows(3000, "Frontend")
+        _free_port_windows(8000, "Python GA")
+
+
 def stream_output(service_name: str, process: subprocess.Popen[str]) -> None:
     assert process.stdout is not None
     for line in process.stdout:
@@ -67,6 +107,7 @@ def validate_requirements() -> None:
 
 def main() -> int:
     validate_requirements()
+    preflight_ports()
 
     print("Starting ChronoMaria services...", flush=True)
     processes: list[tuple[str, subprocess.Popen[str]]] = []
