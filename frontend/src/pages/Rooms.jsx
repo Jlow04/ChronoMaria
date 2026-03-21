@@ -21,6 +21,8 @@ function Rooms() {
   const [typeFilter, setTypeFilter] = useState('all');
   const [sortKey, setSortKey] = useState('room_number');
   const [sortDirection, setSortDirection] = useState('asc');
+  const [modalPrompt, setModalPrompt] = useState('');
+  const [shakeMainModal, setShakeMainModal] = useState(false);
 
   useEffect(() => {
     loadRooms();
@@ -118,6 +120,13 @@ function Rooms() {
   const resetRoomModal = () => {
     setShowModal(false);
     setCurrentRoom(emptyRoom);
+    setModalPrompt('');
+  };
+
+  const triggerRoomModalAttention = () => {
+    setModalPrompt('Please finish this window first before returning to the page.');
+    setShakeMainModal(true);
+    setTimeout(() => setShakeMainModal(false), 380);
   };
 
   return (
@@ -254,11 +263,12 @@ function Rooms() {
         </div>
 
         {showModal && (
-          <div className="modal">
-            <div className="modal-content">
+          <div className="modal" onClick={triggerRoomModalAttention}>
+            <div className={`modal-content ${shakeMainModal ? 'modal-shake' : ''}`} onClick={(e) => e.stopPropagation()}>
               <div className="modal-header">
                 <h2>{currentRoom.id ? 'Edit Room' : 'Add Room'}</h2>
               </div>
+              {modalPrompt && <p className="modal-focus-prompt">{modalPrompt}</p>}
               <form onSubmit={handleSubmit}>
                 <div className="form-group">
                   <label>Room Number</label>

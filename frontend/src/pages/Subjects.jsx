@@ -22,6 +22,11 @@ function Subjects() {
   const [departmentFilter, setDepartmentFilter] = useState('all');
   const [sortKey, setSortKey] = useState('name');
   const [sortDirection, setSortDirection] = useState('asc');
+  const [showDepartmentPicker, setShowDepartmentPicker] = useState(false);
+  const [departmentPrompt, setDepartmentPrompt] = useState('');
+  const [shakeDepartmentPicker, setShakeDepartmentPicker] = useState(false);
+  const [mainModalPrompt, setMainModalPrompt] = useState('');
+  const [shakeMainModal, setShakeMainModal] = useState(false);
 
   useEffect(() => {
     loadSubjects();
@@ -44,6 +49,10 @@ function Subjects() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    if (!String(currentSubject.department || '').trim()) {
+      setError('Please choose one department before saving.');
+      return;
+    }
     try {
       if (currentSubject.id) {
         await subjectService.update(currentSubject.id, currentSubject);
@@ -52,6 +61,7 @@ function Subjects() {
       }
       setShowModal(false);
       setCurrentSubject(emptySubject);
+      setShowDepartmentPicker(false);
       loadSubjects();
     } catch (error) {
       console.error('Error saving subject:', error);
@@ -61,6 +71,7 @@ function Subjects() {
 
   const handleEdit = (item) => {
     setCurrentSubject(item);
+    setShowDepartmentPicker(false);
     setShowModal(true);
   };
 
@@ -114,6 +125,29 @@ function Subjects() {
   const resetSubjectModal = () => {
     setShowModal(false);
     setCurrentSubject(emptySubject);
+    setShowDepartmentPicker(false);
+    setDepartmentPrompt('');
+    setMainModalPrompt('');
+  };
+
+  const triggerSubjectModalAttention = () => {
+    setMainModalPrompt('Please finish this window first before returning to the page.');
+    setShakeMainModal(true);
+    setTimeout(() => setShakeMainModal(false), 380);
+  };
+
+  const triggerDepartmentAttention = () => {
+    setDepartmentPrompt('Please finish this window first before returning to the page.');
+    setShakeDepartmentPicker(true);
+    setTimeout(() => setShakeDepartmentPicker(false), 380);
+  };
+
+  const selectDepartment = (department) => {
+    setCurrentSubject((prev) => ({
+      ...prev,
+      department,
+    }));
+    setShowDepartmentPicker(false);
   };
 
   return (
@@ -253,11 +287,12 @@ function Subjects() {
         </div>
 
         {showModal && (
-          <div className="modal">
-            <div className="modal-content">
+          <div className="modal" onClick={triggerSubjectModalAttention}>
+            <div className={`modal-content ${shakeMainModal ? 'modal-shake' : ''}`} onClick={(e) => e.stopPropagation()}>
               <div className="modal-header">
                 <h2>{currentSubject.id ? 'Edit Subject' : 'Add Subject'}</h2>
               </div>
+              {mainModalPrompt && <p className="modal-focus-prompt">{mainModalPrompt}</p>}
               <form onSubmit={handleSubmit}>
                 <div className="form-group">
                   <label>Code</label>
@@ -297,12 +332,13 @@ function Subjects() {
                 </div>
                 <div className="form-group">
                   <label>Department</label>
-                  <input
-                    type="text"
-                    value={currentSubject.department}
-                    onChange={(e) => setCurrentSubject({ ...currentSubject, department: e.target.value })}
-                    required
-                  />
+                  <button
+                    type="button"
+                    className="subjects-department-picker-btn"
+                    onClick={() => setShowDepartmentPicker(true)}
+                  >
+                    {currentSubject.department || 'Choose department'}
+                  </button>
                 </div>
                 <div className="modal-footer">
                   <button type="button" className="btn btn-secondary" onClick={resetSubjectModal}>
@@ -311,6 +347,48 @@ function Subjects() {
                   <button type="submit" className="btn btn-primary">Save</button>
                 </div>
               </form>
+            </div>
+          </div>
+        )}
+
+        {showModal && showDepartmentPicker && (
+          <div className="modal-overlay" onClick={triggerDepartmentAttention}>
+            <div className={`modal-content subjects-department-picker-modal ${shakeDepartmentPicker ? 'modal-shake' : ''}`} onClick={(e) => e.stopPropagation()}>
+              <div className="modal-header">
+                <h2>Choose Department</h2>
+              </div>
+              {departmentPrompt && <p className="modal-focus-prompt">{departmentPrompt}</p>}
+              <div className="subjects-department-picker-body">
+                {departments.length === 0 ? (
+                  <p className="subjects-department-empty">No departments available yet.</p>
+                ) : (
+                  <div className="subjects-department-picker-list">
+                    {departments.map((department) => (
+                      <label key={department} className="subjects-department-option">
+                        <input
+                          type="checkbox"
+                          checked={currentSubject.department === department}
+                          onChange={() => selectDepartment(department)}
+                        />
+                        <span className="subjects-department-option-content">
+                          <span>{department}</span>
+                          {currentSubject.department === department && (
+                            <span className="subjects-department-option-check" aria-hidden="true">✓</span>
+                          )}
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+                )}
+              </div>
+              <div className="modal-footer">
+                <button type="button" className="btn btn-primary" onClick={() => {
+                  setDepartmentPrompt('');
+                  setShowDepartmentPicker(false);
+                }}>
+                  Done
+                </button>
+              </div>
             </div>
           </div>
         )}

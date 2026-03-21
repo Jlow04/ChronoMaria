@@ -16,6 +16,7 @@ import logoNoBg from '../assets/LogoNoBg.png';
 function Navbar() {
   const [isSuperAdmin, setIsSuperAdmin] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [isScrolled, setIsScrolled] = useState(false);
 
   useEffect(() => {
     const userData = localStorage.getItem('user');
@@ -30,10 +31,21 @@ function Navbar() {
     }
   }, []);
 
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 60);
+    };
+    
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
   const toggleSidebar = () => {
     setIsSidebarOpen((prev) => {
       const next = !prev;
       localStorage.setItem('sidebarOpen', String(next));
+      // Re-evaluate scroll state on toggle
+      setIsScrolled(window.scrollY > 60);
       return next;
     });
   };
@@ -46,13 +58,13 @@ function Navbar() {
     <>
       <button
         type="button"
-        className={`sidebar-toggle ${isSidebarOpen ? 'open' : 'closed'}`}
+        className={`sidebar-toggle ${isSidebarOpen ? 'open' : 'closed'} ${isScrolled ? 'scrolled' : ''}`}
         onClick={toggleSidebar}
         aria-label={isSidebarOpen ? 'Hide menu' : 'Show menu'}
         title={isSidebarOpen ? 'Hide menu' : 'Show menu'}
       >
         <span className="toggle-icon">{isSidebarOpen ? <FaTimes /> : <FaBars />}</span>
-        <span>{isSidebarOpen ? 'Hide Menu' : 'Show Menu'}</span>
+        <span className="toggle-text">{isSidebarOpen ? 'Hide Menu' : 'Show Menu'}</span>
       </button>
 
       <nav className={`nav-island ${isSidebarOpen ? 'open' : 'closed'}`}>

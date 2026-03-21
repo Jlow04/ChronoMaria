@@ -41,6 +41,9 @@ function Settings() {
   const [scheduleConfig, setScheduleConfig] = useState(getScheduleSettings());
   const [scheduleConfigMessage, setScheduleConfigMessage] = useState('');
   const [activeScheduleInfo, setActiveScheduleInfo] = useState('');
+  const [overlayPrompt, setOverlayPrompt] = useState('');
+  const [shakeConfirmationModal, setShakeConfirmationModal] = useState(false);
+  const [shakeDeleteModal, setShakeDeleteModal] = useState(false);
 
   // Get current user from localStorage
   const getCurrentUser = () => {
@@ -163,6 +166,7 @@ function Settings() {
       type: '',
       message: ''
     });
+    setOverlayPrompt('');
   };
 
   const handleUserRoleChange = async (userId, newRole) => {
@@ -229,6 +233,18 @@ function Settings() {
 
   const closeDeleteConfirmation = () => {
     setDeleteConfirmation({ show: false, userId: null, username: '' });
+    setOverlayPrompt('');
+  };
+
+  const triggerSettingsOverlayAttention = (type) => {
+    setOverlayPrompt('Please finish this window first before returning to the page.');
+    if (type === 'confirmation') {
+      setShakeConfirmationModal(true);
+      setTimeout(() => setShakeConfirmationModal(false), 380);
+      return;
+    }
+    setShakeDeleteModal(true);
+    setTimeout(() => setShakeDeleteModal(false), 380);
   };
 
   const handleScheduleConfigChange = (field, value) => {
@@ -697,8 +713,9 @@ function Settings() {
 
         {/* Confirmation Modal */}
         {confirmationModal.show && (
-          <div className="modal-overlay" onClick={closeConfirmation}>
-            <div className="modal-content confirmation-modal" onClick={(e) => e.stopPropagation()}>
+          <div className="modal-overlay" onClick={() => triggerSettingsOverlayAttention('confirmation')}>
+            <div className={`modal-content confirmation-modal ${shakeConfirmationModal ? 'modal-shake' : ''}`} onClick={(e) => e.stopPropagation()}>
+              {overlayPrompt && <p className="modal-focus-prompt">{overlayPrompt}</p>}
               <div className={`confirmation-icon ${confirmationModal.type}`}>
                 {confirmationModal.type === 'success' ? '✓' : '!'}
               </div>
@@ -717,8 +734,9 @@ function Settings() {
 
         {/* Delete Confirmation Modal */}
         {deleteConfirmation.show && (
-          <div className="modal-overlay" onClick={closeDeleteConfirmation}>
-            <div className="modal-content delete-confirmation-modal" onClick={(e) => e.stopPropagation()}>
+          <div className="modal-overlay" onClick={() => triggerSettingsOverlayAttention('delete')}>
+            <div className={`modal-content delete-confirmation-modal ${shakeDeleteModal ? 'modal-shake' : ''}`} onClick={(e) => e.stopPropagation()}>
+              {overlayPrompt && <p className="modal-focus-prompt">{overlayPrompt}</p>}
               <div className="delete-confirmation-icon">🗑️</div>
               <p className="delete-confirmation-title">Delete User</p>
               <p className="delete-confirmation-message">
