@@ -240,7 +240,7 @@ function Faculty() {
   return (
     <div className="app">
       <Navbar />
-      <div className="container">
+      <div className="container page-content">
         <div className="page-header">
           <h1>Faculty Management</h1>
           <p>Manage faculty members and their information</p>
