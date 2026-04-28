@@ -14,7 +14,8 @@ function Settings() {
     currentUsers: false,
     createUser: false,
     scheduleConfig: false,
-    auditLogs: false
+    auditLogs: false,
+    helpManual: false
   });
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -333,6 +334,79 @@ function Settings() {
         : 'Longer runtime allows deeper search when load constraints are harder to satisfy.',
     },
   };
+
+  const helpSections = [
+    {
+      key: 'faculty',
+      title: 'Faculty',
+      summary: 'Use the Faculty page to manage instructors, filter them by department, and assign preferred subjects before generating schedules.',
+      steps: [
+        'Open Faculty to add or edit an instructor profile.',
+        'Choose the department first so the subject picker only shows matching subjects.',
+        'Use Edit and Delete carefully because they update the records used by schedule generation.',
+      ],
+      tips: [
+        'Keep max units realistic so the scheduler does not overload a faculty member.',
+        'Add preferred subjects only after the department is set.',
+      ],
+    },
+    {
+      key: 'subjects',
+      title: 'Subjects',
+      summary: 'Subjects define the course load that the scheduler can place into the timetable.',
+      steps: [
+        'Add all active subjects before generating a schedule.',
+        'Include the correct department and weekly hours for each subject.',
+        'Use the search and filter tools to keep the subject list organized.',
+      ],
+      tips: [
+        'A complete subject list improves schedule quality.',
+        'Department mismatches can prevent the scheduler from finding valid matches.',
+      ],
+    },
+    {
+      key: 'rooms',
+      title: 'Rooms',
+      summary: 'Rooms provide the physical space constraints that the scheduler uses when building the final timetable.',
+      steps: [
+        'Add each available room with the correct building and capacity.',
+        'Choose the room type so the schedule stays realistic.',
+        'Remove or update rooms only when the inventory changes.',
+      ],
+      tips: [
+        'If room capacity is too small, some subjects may not fit.',
+        'Keep room records current before each new schedule run.',
+      ],
+    },
+    {
+      key: 'schedule',
+      title: 'Schedule',
+      summary: 'Schedule generation combines faculty, subjects, rooms, and settings into one optimized output.',
+      steps: [
+        'Confirm that faculty, subjects, and rooms are complete first.',
+        'Review the schedule settings if you want a faster or deeper search.',
+        'Hover over Generate Schedule for a quick reminder, then click it to run the algorithm.',
+      ],
+      tips: [
+        'Higher generations and population values can improve quality but may take longer.',
+        'Use Print Generated List after a schedule is created for reporting or records.',
+      ],
+    },
+    {
+      key: 'users',
+      title: 'Users & Security',
+      summary: 'The Settings area is also where admins manage users, audit logs, and schedule configuration.',
+      steps: [
+        'Use Current Users to change roles, toggle active status, or delete a user.',
+        'Create New User with a valid SMU corporate email and a strong password.',
+        'Use Audit Logs to verify who changed what and when.',
+      ],
+      tips: [
+        'Save schedule settings after changing values so they are applied immediately.',
+        'If you need a password reminder, the create-user section shows the validation rules.',
+      ],
+    },
+  ];
 
   return (
     <div className="app">
@@ -758,6 +832,54 @@ function Settings() {
                     ) : (
                       <p className="no-logs">No audit logs available</p>
                     )}
+                  </div>
+                )}
+              </div>
+
+              <div className={`dropdown-section help-section ${expandedSections.helpManual ? 'expanded' : ''}`}>
+                <button
+                  className="dropdown-toggle"
+                  onClick={() => toggleSection('helpManual')}
+                >
+                  <span className="dropdown-icon">▼</span>
+                  <span>Help & Documentation</span>
+                </button>
+                {expandedSections.helpManual && (
+                  <div className="dropdown-content help-content">
+                    <div className="help-intro-card">
+                      <p className="help-intro-title">Quick guide to the main features</p>
+                      <p>
+                        Use this section when you need a reminder about how the system fits together.
+                        The pages below are the ones most people use when building and maintaining schedules.
+                      </p>
+                    </div>
+
+                    <div className="help-grid">
+                      {helpSections.map((section) => (
+                        <article key={section.key} className="help-card">
+                          <h3>{section.title}</h3>
+                          <p className="help-summary">{section.summary}</p>
+
+                          <div className="help-block">
+                            <h4>How to use it</h4>
+                            <ol>
+                              {section.steps.map((step) => (
+                                <li key={step}>{step}</li>
+                              ))}
+                            </ol>
+                          </div>
+
+                          <div className="help-block help-tips">
+                            <h4>Tips</h4>
+                            <ul>
+                              {section.tips.map((tip) => (
+                                <li key={tip}>{tip}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        </article>
+                      ))}
+                    </div>
                   </div>
                 )}
               </div>
