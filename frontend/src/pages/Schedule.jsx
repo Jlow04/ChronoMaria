@@ -111,6 +111,9 @@ function QualityPanel({ report, fitness, generations, subjectCount, schedule }) 
     fb.base_score,
     fb.penalty_faculty_conflicts,
     fb.penalty_room_conflicts,
+    fb.penalty_room_status,
+    fb.penalty_room_dept_mismatches,
+    fb.penalty_room_type_mismatches,
     fb.penalty_dept_mismatches,
     fb.penalty_unqualified,
     fb.penalty_non_preferred,
@@ -147,6 +150,9 @@ function QualityPanel({ report, fitness, generations, subjectCount, schedule }) 
               <h4>Conflicts</h4>
               <p>Faculty conflicts: <strong>{c.faculty_conflict_count ?? 0}</strong></p>
               <p>Room conflicts: <strong>{c.room_conflict_count ?? 0}</strong></p>
+              <p>Room status issues: <strong>{c.room_status_count ?? 0}</strong></p>
+              <p>Room dept mismatches: <strong>{c.room_dept_mismatch_count ?? 0}</strong></p>
+              <p>Room type mismatches: <strong>{c.room_type_mismatch_count ?? 0}</strong></p>
               <p>Department mismatches: <strong>{c.dept_mismatch_count ?? 0}</strong></p>
               <p>Unqualified assignments: <strong>{c.unqualified_count ?? 0}</strong></p>
               <p>Non-preferred assignments: <strong>{c.non_preferred_count ?? 0}</strong></p>
@@ -162,6 +168,9 @@ function QualityPanel({ report, fitness, generations, subjectCount, schedule }) 
               <p>Base score: <strong>{baseScore}</strong></p>
               <p>Faculty conflict penalty: <strong>-{fb.penalty_faculty_conflicts ?? 0}</strong></p>
               <p>Room conflict penalty: <strong>-{fb.penalty_room_conflicts ?? 0}</strong></p>
+              <p>Room status penalty: <strong>-{fb.penalty_room_status ?? 0}</strong></p>
+              <p>Room dept mismatch penalty: <strong>-{fb.penalty_room_dept_mismatches ?? 0}</strong></p>
+              <p>Room type mismatch penalty: <strong>-{fb.penalty_room_type_mismatches ?? 0}</strong></p>
               <p>Dept mismatch penalty: <strong>-{fb.penalty_dept_mismatches ?? 0}</strong></p>
               <p>Unqualified penalty: <strong>-{fb.penalty_unqualified ?? 0}</strong></p>
               <p>Non-preferred penalty: <strong>-{fb.penalty_non_preferred ?? 0}</strong></p>

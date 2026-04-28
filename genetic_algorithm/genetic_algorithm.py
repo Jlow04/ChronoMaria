@@ -21,12 +21,20 @@ class GeneticAlgorithm:
 
         self.faculty_by_id = {member.get('id'): member for member in self.faculty if member.get('id') is not None}
         self.subject_by_id = {subject.get('id'): subject for subject in self.subjects if subject.get('id') is not None}
+        self.room_by_id = {room.get('id'): room for room in self.rooms if room.get('id') is not None}
         self.faculty_by_department = {}
         for member in self.faculty:
             dept = self._normalize_department(member.get('department'))
             if dept not in self.faculty_by_department:
                 self.faculty_by_department[dept] = []
             self.faculty_by_department[dept].append(member)
+        self.rooms_by_department = {}
+        for room in self.rooms:
+            dept = self._normalize_department(room.get('department') or room.get('room_department') or '')
+            if dept and dept != 'unknown':
+                if dept not in self.rooms_by_department:
+                    self.rooms_by_department[dept] = []
+                self.rooms_by_department[dept].append(room)
 
     def _clone_individual(self, individual: List[Dict]) -> List[Dict]:
         return [gene.copy() for gene in individual]
@@ -113,6 +121,33 @@ class GeneticAlgorithm:
         # No strict candidates available.
         return []
 
+    def _eligible_rooms_for_subject(self, subject: Dict) -> List[Dict]:
+        """Get rooms eligible for a subject based on department and status."""
+        subject_dept = self._normalize_department(subject.get('department'))
+        
+        # Filter by department match and available status
+        eligible = [
+            r for r in self.rooms 
+            if r.get('status') == 'Available' and 
+               (self._normalize_department(r.get('department') or r.get('room_department') or '') == subject_dept or 
+                r.get('is_common_room') or r.get('common_room'))
+        ]
+        if eligible:
+            return eligible
+        
+        # Fallback: any available room regardless of department
+        fallback = [r for r in self.rooms if r.get('status') == 'Available']
+        if fallback:
+            return fallback
+        
+        # Last resort: any room
+        return self.rooms
+
+    def _pick_room_for_subject(self, subject: Dict) -> Dict:
+        """Select a room for a subject using eligibility rules."""
+        eligible = self._eligible_rooms_for_subject(subject)
+        return random.choice(eligible) if eligible else (self.rooms[0] if self.rooms else {})
+
     def _pick_faculty_for_subject(self, subject: Dict, candidates: List[Dict], current_units: Dict[int, int] = None) -> Dict:
         if not candidates:
             return {}
@@ -183,7 +218,7 @@ class GeneticAlgorithm:
         for subject in self.subjects:
             candidates = self._faculty_candidates_for_subject(subject)
             chosen_faculty = self._pick_faculty_for_subject(subject, candidates, units_by_faculty)
-            chosen_room = random.choice(self.rooms) if self.rooms else {}
+            chosen_room = self._pick_room_for_subject(subject)
 
             fid = chosen_faculty.get('id')
             if fid is not None:
@@ -194,7 +229,7 @@ class GeneticAlgorithm:
                 'subject_id': subject.get('id'),
                 'faculty': chosen_faculty.get('name', 'TBA'),
                 'faculty_id': chosen_faculty.get('id'),
-                'room': chosen_room.get('room_number', 'TBA'),
+                'room': chosen_room.get('room_code') or chosen_room.get('room_number') or 'TBA',
                 'room_id': chosen_room.get('id'),
                 'day': random.choice(self.days),
                 'time': random.choice(self.time_slots)
@@ -249,6 +284,29 @@ class GeneticAlgorithm:
             if key in room_schedule:
                 fitness -= 10  # Penalty for room conflict
             room_schedule[key] = True
+        
+        # Check room eligibility and department match
+        for gene in individual:
+            subject = self.subject_by_id.get(gene.get('subject_id'), {})
+            room = self.room_by_id.get(gene.get('room_id'), {})
+            
+            # Check room status
+            if room.get('status') != 'Available':
+                fitness -= 40
+            
+            # Check room-subject department match
+            room_dept = self._normalize_department(room.get('department') or room.get('room_department') or '')
+            subject_dept = self._normalize_department(subject.get('department'))
+            is_common = room.get('is_common_room') or room.get('common_room')
+            
+            if room_dept and subject_dept and room_dept != subject_dept and not is_common:
+                fitness -= 15
+            
+            # Check room type compatibility (if specified)
+            room_type = room.get('room_type') or room.get('type')
+            subject_type = subject.get('subject_type')
+            if room_type and subject_type and room_type.lower() != subject_type.lower():
+                fitness -= 15
         
         # Check faculty workload (simplified)
         faculty_load = {}
@@ -334,8 +392,9 @@ class GeneticAlgorithm:
                     gene['faculty'] = new_faculty.get('name', 'Unknown')
                     gene['faculty_id'] = new_faculty.get('id')
                 elif mutation_type == 'room' and self.rooms:
-                    new_room = random.choice(self.rooms)
-                    gene['room'] = new_room.get('room_number', 'TBA')
+                    subject = self.subject_by_id.get(gene.get('subject_id'), {})
+                    new_room = self._pick_room_for_subject(subject)
+                    gene['room'] = new_room.get('room_code') or new_room.get('room_number') or 'TBA'
                     gene['room_id'] = new_room.get('id')
                 elif mutation_type == 'time':
                     gene['time'] = random.choice(self.time_slots)
@@ -383,13 +442,18 @@ class GeneticAlgorithm:
 
         # ── Department mismatches, unqualified & non-preferred assignments ─────
         dept_mismatches = []
+        room_dept_mismatches = []
+        room_status_issues = []
+        room_type_mismatches = []
         unqualified_assignments = []
         non_preferred_assignments = []
 
         for gene in individual:
             subject = self.subject_by_id.get(gene.get('subject_id'), {})
             faculty  = self.faculty_by_id.get(gene.get('faculty_id'), {})
+            room = self.room_by_id.get(gene.get('room_id'), {})
 
+            # Faculty department mismatch
             f_dept = self._normalize_department(faculty.get('department'))
             s_dept = self._normalize_department(subject.get('department'))
             if f_dept and s_dept and f_dept != s_dept:
@@ -400,6 +464,37 @@ class GeneticAlgorithm:
                     "faculty_dept": f_dept
                 })
 
+            # Room status check
+            if room.get('status') != 'Available':
+                room_status_issues.append({
+                    "subject": gene.get('subject'),
+                    "room": gene.get('room'),
+                    "room_status": room.get('status')
+                })
+
+            # Room department mismatch
+            room_dept = self._normalize_department(room.get('department') or room.get('room_department') or '')
+            is_common = room.get('is_common_room') or room.get('common_room')
+            if room_dept and s_dept and room_dept != s_dept and not is_common:
+                room_dept_mismatches.append({
+                    "subject": gene.get('subject'),
+                    "subject_dept": s_dept,
+                    "room": gene.get('room'),
+                    "room_dept": room_dept
+                })
+
+            # Room type mismatch
+            room_type = room.get('room_type') or room.get('type')
+            subject_type = subject.get('subject_type')
+            if room_type and subject_type and room_type.lower() != subject_type.lower():
+                room_type_mismatches.append({
+                    "subject": gene.get('subject'),
+                    "subject_type": subject_type,
+                    "room": gene.get('room'),
+                    "room_type": room_type
+                })
+
+            # Faculty qualification check
             strict = self._strict_faculty_candidates_for_subject(subject)
             if strict:
                 allowed = {m.get('id') for m in strict}
@@ -449,6 +544,9 @@ class GeneticAlgorithm:
         # ── Penalty breakdown (mirrors calculate_fitness logic) ───────────────
         pen_faculty    = len(faculty_conflicts)  * 10
         pen_room       = len(room_conflicts)     * 10
+        pen_room_status = len(room_status_issues) * 40
+        pen_room_dept  = len(room_dept_mismatches) * 15
+        pen_room_type  = len(room_type_mismatches) * 15
         pen_dept       = len(dept_mismatches)    * 20
         pen_unqualified = len(unqualified_assignments) * 50
         pen_nonpref    = len(non_preferred_assignments) * (20 + 6)
@@ -457,7 +555,7 @@ class GeneticAlgorithm:
             for e in overloaded
         )
         pen_imbalance  = 5 if load_imbalance else 0
-        total_penalty  = pen_faculty + pen_room + pen_dept + pen_unqualified + pen_nonpref + pen_overload + pen_imbalance
+        total_penalty  = pen_faculty + pen_room + pen_room_status + pen_room_dept + pen_room_type + pen_dept + pen_unqualified + pen_nonpref + pen_overload + pen_imbalance
         base_fitness   = 100.0 + len(individual) * 20.0
 
         # ── Quality label ─────────────────────────────────────────────────────
@@ -485,6 +583,12 @@ class GeneticAlgorithm:
                 "faculty_conflict_count":  len(faculty_conflicts),
                 "room_conflicts":          room_conflicts,
                 "room_conflict_count":     len(room_conflicts),
+                "room_status_issues":      room_status_issues,
+                "room_status_count":       len(room_status_issues),
+                "room_dept_mismatches":    room_dept_mismatches,
+                "room_dept_mismatch_count": len(room_dept_mismatches),
+                "room_type_mismatches":    room_type_mismatches,
+                "room_type_mismatch_count": len(room_type_mismatches),
                 "dept_mismatches":         dept_mismatches,
                 "dept_mismatch_count":     len(dept_mismatches),
                 "unqualified_assignments": unqualified_assignments,
@@ -500,6 +604,9 @@ class GeneticAlgorithm:
                 "total_penalty":           total_penalty,
                 "penalty_faculty_conflicts": pen_faculty,
                 "penalty_room_conflicts":  pen_room,
+                "penalty_room_status":     pen_room_status,
+                "penalty_room_dept_mismatches": pen_room_dept,
+                "penalty_room_type_mismatches": pen_room_type,
                 "penalty_dept_mismatches": pen_dept,
                 "penalty_unqualified":     pen_unqualified,
                 "penalty_non_preferred":   pen_nonpref,
