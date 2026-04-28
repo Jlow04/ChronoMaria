@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { FaBuilding, FaChalkboardTeacher, FaStar } from 'react-icons/fa';
 import Navbar from '../components/Navbar';
 import { facultyService, subjectService } from '../services/api';
+import { getCurrentUser, isSuperAdmin } from '../services/authHelper';
 import './Faculty.css';
 
 const emptyFaculty = {
@@ -33,8 +34,20 @@ function Faculty() {
   const [shakeDepartmentPicker, setShakeDepartmentPicker] = useState(false);
   const [mainModalPrompt, setMainModalPrompt] = useState('');
   const [shakeMainModal, setShakeMainModal] = useState(false);
+  const [userDepartment, setUserDepartment] = useState(null);
+  const [isSuperAdminUser, setIsSuperAdminUser] = useState(false);
 
   useEffect(() => {
+    // Get current user info
+    const currentUser = getCurrentUser();
+    const isAdmin = isSuperAdmin();
+    setIsSuperAdminUser(isAdmin);
+
+    if (currentUser && !isAdmin) {
+      // Get department name from user info
+      setUserDepartment(currentUser.department_name || null);
+    }
+
     loadFaculty();
     loadSubjects();
   }, []);
@@ -199,8 +212,15 @@ function Faculty() {
   const departmentOptions = useMemo(() => {
     const fromFaculty = faculty.map((item) => String(item.department || '').trim()).filter(Boolean);
     const fromSubjects = subjects.map((item) => String(item.department || '').trim()).filter(Boolean);
-    return Array.from(new Set([...fromFaculty, ...fromSubjects])).sort((a, b) => a.localeCompare(b));
-  }, [faculty, subjects]);
+    const allDepts = Array.from(new Set([...fromFaculty, ...fromSubjects])).sort((a, b) => a.localeCompare(b));
+
+    // For non-super-admins, only show their own department
+    if (!isSuperAdminUser && userDepartment) {
+      return allDepts.filter(dept => dept === userDepartment);
+    }
+
+    return allDepts;
+  }, [faculty, subjects, isSuperAdminUser, userDepartment]);
 
   const averageMaxUnits = useMemo(() => {
     if (faculty.length === 0) {
@@ -401,7 +421,21 @@ function Faculty() {
           </div>
 
           <div className="actions faculty-actions">
-            <button className="btn btn-primary" onClick={() => setShowModal(true)}>
+            <button
+              className="btn btn-primary"
+              onClick={() => {
+                // For non-super-admins, pre-populate with their department
+                if (!isSuperAdminUser && userDepartment) {
+                  setCurrentFaculty({
+                    ...emptyFaculty,
+                    department: userDepartment
+                  });
+                } else {
+                  setCurrentFaculty(emptyFaculty);
+                }
+                setShowModal(true);
+              }}
+            >
               Add Faculty
             </button>
             <button className="btn btn-primary" onClick={() => navigate('/dashboard')}>
@@ -484,9 +518,14 @@ function Faculty() {
                     type="button"
                     className="faculty-subjects-picker-btn"
                     onClick={() => setShowDepartmentPicker(true)}
+                    disabled={!isSuperAdminUser}
+                    title={!isSuperAdminUser ? `Your department: ${userDepartment}` : 'Select department'}
                   >
                     {currentFaculty.department || 'Choose department'}
                   </button>
+                  {!isSuperAdminUser && (
+                    <p className="faculty-subjects-hint">Your department is automatically set: {userDepartment}</p>
+                  )}
                 </div>
                 <div className="form-group">
                   <label>Max Units</label>

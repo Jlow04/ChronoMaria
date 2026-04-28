@@ -47,10 +47,27 @@ class Faculty {
   }
 
   static async create(facultyData) {
-    const { name, email, department_id, max_units, preferred_subjects } = facultyData;
+    const { name, email, department, department_id, max_units, preferred_subjects } = facultyData;
+
+    let finalDepartmentId = department_id;
+    let finalDepartment = department;
+
+    // If department text is provided but not department_id, look it up
+    if (department && !department_id) {
+      const Department = require('./Department');
+      try {
+        const deptData = await Department.getByName(department);
+        if (deptData) {
+          finalDepartmentId = deptData.department_id;
+        }
+      } catch (err) {
+        console.warn('Could not find department by name:', department);
+      }
+    }
+
     const { data, error } = await supabase
       .from('faculty')
-      .insert([{ name, email, department_id, max_units, preferred_subjects }])
+      .insert([{ name, email, department: finalDepartment, department_id: finalDepartmentId, max_units, preferred_subjects }])
       .select()
       .single();
 
@@ -59,10 +76,27 @@ class Faculty {
   }
 
   static async update(id, facultyData) {
-    const { name, email, department_id, max_units, preferred_subjects } = facultyData;
+    const { name, email, department, department_id, max_units, preferred_subjects } = facultyData;
+
+    let finalDepartmentId = department_id;
+    let finalDepartment = department;
+
+    // If department text is provided but not department_id, look it up
+    if (department && !department_id) {
+      const Department = require('./Department');
+      try {
+        const deptData = await Department.getByName(department);
+        if (deptData) {
+          finalDepartmentId = deptData.department_id;
+        }
+      } catch (err) {
+        console.warn('Could not find department by name:', department);
+      }
+    }
+
     const { data, error } = await supabase
       .from('faculty')
-      .update({ name, email, department_id, max_units, preferred_subjects })
+      .update({ name, email, department: finalDepartment, department_id: finalDepartmentId, max_units, preferred_subjects })
       .eq('id', id)
       .select()
       .single();
