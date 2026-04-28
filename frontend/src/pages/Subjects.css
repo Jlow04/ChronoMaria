@@ -121,6 +121,10 @@
   justify-content: flex-end;
 }
 
+.subjects-actions .btn {
+  flex: 1;
+}
+
 .subjects-table-wrap {
   overflow-x: auto;
 }

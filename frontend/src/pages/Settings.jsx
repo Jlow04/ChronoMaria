@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import Navbar from '../components/Navbar';
-import { userService, auditLogService } from '../services/api';
+import { userService, auditLogService, departmentService } from '../services/api';
 import {
   getScheduleSettings,
   normalizeScheduleSettings,
@@ -34,7 +34,8 @@ function Settings() {
     username: '',
     password: '',
     confirmPassword: '',
-    email: ''
+    email: '',
+    department_id: ''
   });
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -44,6 +45,7 @@ function Settings() {
   const [overlayPrompt, setOverlayPrompt] = useState('');
   const [shakeConfirmationModal, setShakeConfirmationModal] = useState(false);
   const [shakeDeleteModal, setShakeDeleteModal] = useState(false);
+  const [departments, setDepartments] = useState([]);
 
   // Get current user from localStorage
   const getCurrentUser = () => {
@@ -66,6 +68,12 @@ function Settings() {
   }, [expandedSections.currentUsers]);
 
   useEffect(() => {
+    if (expandedSections.createUser) {
+      loadDepartments();
+    }
+  }, [expandedSections.createUser]);
+
+  useEffect(() => {
     if (expandedSections.auditLogs) {
       loadAuditLogs();
     }
@@ -80,6 +88,18 @@ function Settings() {
       setError('Failed to load users: ' + err.message);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadDepartments = async () => {
+    try {
+      console.log('📋 Loading departments...');
+      const data = await departmentService.getAll();
+      console.log('✅ Departments loaded:', data);
+      setDepartments(data);
+    } catch (err) {
+      console.error('❌ Failed to load departments:', err);
+      setError('Failed to load departments: ' + err.message);
     }
   };
 
@@ -116,13 +136,23 @@ function Settings() {
       showConfirmation('error', 'Passwords do not match!');
       return;
     }
+    if (!formData.department_id) {
+      showConfirmation('error', 'Please select a department!');
+      return;
+    }
     try {
       setLoading(true);
       setError('');
       const currentUsername = getCurrentUser();
-      await userService.create(formData.username, formData.password, formData.email, currentUsername);
+      await userService.create(
+        formData.username,
+        formData.password,
+        formData.email,
+        currentUsername,
+        formData.department_id
+      );
       showConfirmation('success', 'User created successfully!');
-      setFormData({ username: '', password: '', confirmPassword: '', email: '' });
+      setFormData({ username: '', password: '', confirmPassword: '', email: '', department_id: '' });
       // Reload users list if it's expanded
       if (expandedSections.currentUsers) {
         loadUsers();
@@ -483,16 +513,44 @@ function Settings() {
                       </div>
                       <div className="form-group">
                         <label htmlFor="email">Email</label>
-                        <input 
-                          type="email" 
+                        <input
+                          type="email"
                           id="email"
                           name="email"
                           value={formData.email}
                           onChange={handleInputChange}
-                          placeholder="Enter email" 
+                          placeholder="Enter email"
                         />
                       </div>
-                      <button type="submit" className="btn btn-primary" disabled={loading || formData.password !== formData.confirmPassword || !formData.password}>
+                      <div className="form-group">
+                        <label htmlFor="department_id">Department</label>
+                        <select
+                          id="department_id"
+                          name="department_id"
+                          value={formData.department_id}
+                          onChange={handleInputChange}
+                          required
+                        >
+                          <option value="">Select a Department</option>
+                          {departments && departments.length > 0 ? (
+                            departments
+                              .filter((dept, index, self) =>
+                                index === self.findIndex((d) => d.department_name === dept.department_name)
+                              )
+                              .map((dept) => (
+                                <option key={dept.department_id} value={dept.department_id}>
+                                  {dept.department_name}
+                                </option>
+                              ))
+                          ) : (
+                            <option disabled>Loading departments...</option>
+                          )}
+                        </select>
+                        {departments && departments.length === 0 && !loading && (
+                          <p className="error-message">No departments available</p>
+                        )}
+                      </div>
+                      <button type="submit" className="btn btn-primary" disabled={loading || formData.password !== formData.confirmPassword || !formData.password || !formData.department_id}>
                         {loading ? 'Creating...' : 'Create User'}
                       </button>
                     </form>

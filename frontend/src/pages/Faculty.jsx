@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { FaBuilding, FaChalkboardTeacher, FaStar } from 'react-icons/fa';
 import Navbar from '../components/Navbar';
 import { facultyService, subjectService } from '../services/api';
@@ -13,6 +14,7 @@ const emptyFaculty = {
 };
 
 function Faculty() {
+  const navigate = useNavigate();
   const [faculty, setFaculty] = useState([]);
   const [subjects, setSubjects] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -401,6 +403,9 @@ function Faculty() {
           <div className="actions faculty-actions">
             <button className="btn btn-primary" onClick={() => setShowModal(true)}>
               Add Faculty
+            </button>
+            <button className="btn btn-primary" onClick={() => navigate('/dashboard')}>
+              Return to Dashboard
             </button>
           </div>
         </div>

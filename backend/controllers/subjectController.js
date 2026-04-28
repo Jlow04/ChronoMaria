@@ -2,7 +2,8 @@ const Subject = require('../models/Subject');
 
 exports.getAllSubjects = async (req, res) => {
   try {
-    const subjects = await Subject.getAll();
+    const { department } = req.query;
+    const subjects = await Subject.getAll({ department });
     res.json(subjects);
   } catch (error) {
     res.status(500).json({ error: error.message });

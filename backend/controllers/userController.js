@@ -11,8 +11,8 @@ exports.login = async (req, res) => {
     }
 
     console.log('🔐 Login attempt received');
-    
-    const user = await User.getByUsername(username);
+
+    const user = await User.getByUsernameWithDepartment(username);
     if (!user) {
       console.log('❌ User not found');
       return res.status(401).json({ error: 'Invalid username or password' });
@@ -73,13 +73,17 @@ exports.getAll = async (req, res) => {
 
 exports.create = async (req, res) => {
   try {
-    const { username, password, email, admin_username } = req.body;
+    const { username, password, email, admin_username, department_id } = req.body;
 
     if (!username || !password) {
       return res.status(400).json({ error: 'Username and password are required' });
     }
 
-    console.log(`📝 Creating user - Username: "${username}"`);
+    if (!department_id) {
+      return res.status(400).json({ error: 'Department is required' });
+    }
+
+    console.log(`📝 Creating user - Username: "${username}", Department: ${department_id}`);
 
     // Check if user already exists
     const existingUser = await User.getByUsername(username);
@@ -97,7 +101,8 @@ exports.create = async (req, res) => {
       password_hash: hashedPassword,
       email: email || null,
       role: 'Admin',
-      is_active: true
+      is_active: true,
+      department_id: parseInt(department_id)
     });
 
     console.log(`✅ User created successfully: ${username}`);
@@ -108,7 +113,7 @@ exports.create = async (req, res) => {
         admin_username: admin_username || 'Super Admin',
         action: 'USER_CREATED',
         target_username: username,
-        details: `Created user: ${username} with email: ${email || 'N/A'}`,
+        details: `Created user: ${username} with email: ${email || 'N/A'}, Department ID: ${department_id}`,
         created_at: new Date().toISOString()
       });
     } catch (auditError) {

@@ -127,6 +127,10 @@
   justify-content: flex-end;
 }
 
+.faculty-actions .btn {
+  flex: 1;
+}
+
 .faculty-table-wrap {
   overflow-x: auto;
 }
