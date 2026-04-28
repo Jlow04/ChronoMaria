@@ -198,6 +198,7 @@ function Schedule() {
   const [generatedAt, setGeneratedAt] = useState('');
   const [constraints, setConstraints] = useState(getScheduleSettings());
   const [lastRunSummary, setLastRunSummary] = useState(null);
+  const [showGenerateTooltip, setShowGenerateTooltip] = useState(false);
 
   useEffect(() => {
     setConstraints(getScheduleSettings());
@@ -387,13 +388,22 @@ function Schedule() {
             </div>
           </div>
 
-          <button 
-            className="btn btn-success" 
-            onClick={generateSchedule}
-            disabled={loading}
-          >
-            {loading ? 'Generating...' : 'Generate Schedule'}
-          </button>
+          <div className="schedule-button-wrapper">
+            <button 
+              className="btn btn-success" 
+              onClick={generateSchedule}
+              disabled={loading}
+              onMouseEnter={() => setShowGenerateTooltip(true)}
+              onMouseLeave={() => setShowGenerateTooltip(false)}
+            >
+              {loading ? 'Generating...' : 'Generate Schedule'}
+            </button>
+            {showGenerateTooltip && (
+              <div className="schedule-tooltip">
+                Run the genetic algorithm to create an optimal faculty schedule based on your constraints
+              </div>
+            )}
+          </div>
           {schedule && schedule.length > 0 && (
             <button className="btn btn-secondary print-btn" onClick={() => window.print()}>
               Print Generated List
