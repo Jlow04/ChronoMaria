@@ -83,7 +83,7 @@ exports.create = async (req, res) => {
       return res.status(400).json({ error: 'Department is required' });
     }
 
-    console.log(`📝 Creating user - Username: "${username}", Department: ${department_id}`);
+    console.log(`📝 Creating user - Username: "${username}", Department ID: ${department_id}`);
 
     // Check if user already exists
     const existingUser = await User.getByUsername(username);
@@ -92,17 +92,26 @@ exports.create = async (req, res) => {
       return res.status(400).json({ error: 'Username already exists' });
     }
 
+    // Get the department name from department_id
+    const Department = require('../models/Department');
+    const departmentData = await Department.getById(parseInt(department_id));
+    if (!departmentData) {
+      console.log(`❌ Department not found: ${department_id}`);
+      return res.status(400).json({ error: 'Selected department not found' });
+    }
+
     // Hash the password
     const hashedPassword = await this.hashPassword(password);
 
-    // Create user
+    // Create user with department information
     const newUser = await User.create({
       username,
       password_hash: hashedPassword,
       email: email || null,
       role: 'Admin',
       is_active: true,
-      department_id: parseInt(department_id)
+      department_id: parseInt(department_id),
+      department: departmentData.department_name
     });
 
     console.log(`✅ User created successfully: ${username}`);
@@ -113,7 +122,7 @@ exports.create = async (req, res) => {
         admin_username: admin_username || 'Super Admin',
         action: 'USER_CREATED',
         target_username: username,
-        details: `Created user: ${username} with email: ${email || 'N/A'}, Department ID: ${department_id}`,
+        details: `Created user: ${username} with email: ${email || 'N/A'}, Department: ${departmentData.department_name}`,
         created_at: new Date().toISOString()
       });
     } catch (auditError) {
