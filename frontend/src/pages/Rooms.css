@@ -121,6 +121,10 @@
   justify-content: flex-end;
 }
 
+.rooms-actions .btn {
+  flex: 1;
+}
+
 .rooms-table-wrap {
   overflow-x: auto;
 }

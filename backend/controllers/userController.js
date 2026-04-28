@@ -11,8 +11,8 @@ exports.login = async (req, res) => {
     }
 
     console.log('🔐 Login attempt received');
-    
-    const user = await User.getByUsername(username);
+
+    const user = await User.getByUsernameWithDepartment(username);
     if (!user) {
       console.log('❌ User not found');
       return res.status(401).json({ error: 'Invalid username or password' });
@@ -73,13 +73,17 @@ exports.getAll = async (req, res) => {
 
 exports.create = async (req, res) => {
   try {
-    const { username, password, email, admin_username } = req.body;
+    const { username, password, email, admin_username, department_id } = req.body;
 
     if (!username || !password) {
       return res.status(400).json({ error: 'Username and password are required' });
     }
 
-    console.log(`📝 Creating user - Username: "${username}"`);
+    if (!department_id) {
+      return res.status(400).json({ error: 'Department is required' });
+    }
+
+    console.log(`📝 Creating user - Username: "${username}", Department ID: ${department_id}`);
 
     // Check if user already exists
     const existingUser = await User.getByUsername(username);
@@ -88,16 +92,26 @@ exports.create = async (req, res) => {
       return res.status(400).json({ error: 'Username already exists' });
     }
 
+    // Get the department name from department_id
+    const Department = require('../models/Department');
+    const departmentData = await Department.getById(parseInt(department_id));
+    if (!departmentData) {
+      console.log(`❌ Department not found: ${department_id}`);
+      return res.status(400).json({ error: 'Selected department not found' });
+    }
+
     // Hash the password
     const hashedPassword = await this.hashPassword(password);
 
-    // Create user
+    // Create user with department information
     const newUser = await User.create({
       username,
       password_hash: hashedPassword,
       email: email || null,
       role: 'Admin',
-      is_active: true
+      is_active: true,
+      department_id: parseInt(department_id),
+      department: departmentData.department_name
     });
 
     console.log(`✅ User created successfully: ${username}`);
@@ -108,7 +122,7 @@ exports.create = async (req, res) => {
         admin_username: admin_username || 'Super Admin',
         action: 'USER_CREATED',
         target_username: username,
-        details: `Created user: ${username} with email: ${email || 'N/A'}`,
+        details: `Created user: ${username} with email: ${email || 'N/A'}, Department: ${departmentData.department_name}`,
         created_at: new Date().toISOString()
       });
     } catch (auditError) {

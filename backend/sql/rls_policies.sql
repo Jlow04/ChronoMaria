@@ -10,6 +10,7 @@ ALTER TABLE IF EXISTS public.users ENABLE ROW LEVEL SECURITY;
 ALTER TABLE IF EXISTS public.faculty ENABLE ROW LEVEL SECURITY;
 ALTER TABLE IF EXISTS public.subjects ENABLE ROW LEVEL SECURITY;
 ALTER TABLE IF EXISTS public.rooms ENABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS public.departments ENABLE ROW LEVEL SECURITY;
 
 -- Drop old policies
 DROP POLICY IF EXISTS faculty_select_all ON public.faculty;
@@ -26,6 +27,11 @@ DROP POLICY IF EXISTS rooms_select_all ON public.rooms;
 DROP POLICY IF EXISTS rooms_insert_all ON public.rooms;
 DROP POLICY IF EXISTS rooms_update_all ON public.rooms;
 DROP POLICY IF EXISTS rooms_delete_all ON public.rooms;
+
+DROP POLICY IF EXISTS departments_select_all ON public.departments;
+DROP POLICY IF EXISTS departments_insert_all ON public.departments;
+DROP POLICY IF EXISTS departments_update_all ON public.departments;
+DROP POLICY IF EXISTS departments_delete_all ON public.departments;
 
 -- Users table - only user_functionality policy
 DROP POLICY IF EXISTS user_functionality ON public.users;
@@ -60,9 +66,12 @@ TO anon, authenticated
 USING (true)
 WITH CHECK (true);
 
-COMMIT;
-FOR DELETE
+-- Departments - Allow all read and write operations
+CREATE POLICY departments_all
+ON public.departments
+FOR ALL
 TO anon, authenticated
-USING (true);
+USING (true)
+WITH CHECK (true);
 
 COMMIT;

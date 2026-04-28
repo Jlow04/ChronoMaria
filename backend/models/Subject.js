@@ -11,7 +11,9 @@ class Subject {
       name: data.name,
       units: data.units,
       hours_per_week: data.hours_per_week,
-      department: data.department,
+      department_id: data.department_id,
+      department: data.department ?? null,
+      program: data.program ?? null,
       course_no: data['Course_No.'] ?? data.course_no ?? null,
       section: data.SECTION ?? data.section ?? null,
     };
@@ -29,16 +31,25 @@ class Subject {
       name: subjectData.name,
       units: subjectData.units,
       hours_per_week: subjectData.hours_per_week,
-      department: subjectData.department,
+      department_id: subjectData.department_id,
+      program: subjectData.program,
     };
   }
 
-  static async getAll() {
-    const { data, error } = await supabase
+  static async getAll(options = {}) {
+    const { department } = options;
+
+    let query = supabase
       .from('subjects')
-      .select('*')
-      .order('id');
-    
+      .select('*');
+
+    if (department) {
+      // Filter by department_name (e.g., "SEAIT", "Business", etc.)
+      query = query.eq('department', department);
+    }
+
+    const { data, error } = await query.order('id');
+
     if (error) throw error;
     return Subject.normalizeData(data);
   }
@@ -49,7 +60,7 @@ class Subject {
       .select('*')
       .eq('id', id)
       .single();
-    
+
     if (error) throw error;
     return Subject.normalizeData(data);
   }
@@ -61,7 +72,7 @@ class Subject {
       .insert([payload])
       .select()
       .single();
-    
+
     if (error) throw error;
     return Subject.normalizeData(data);
   }
@@ -74,7 +85,7 @@ class Subject {
       .eq('id', id)
       .select()
       .single();
-    
+
     if (error) throw error;
     return Subject.normalizeData(data);
   }
@@ -86,7 +97,7 @@ class Subject {
       .eq('id', id)
       .select()
       .single();
-    
+
     if (error) throw error;
     return Subject.normalizeData(data);
   }

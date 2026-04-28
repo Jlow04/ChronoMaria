@@ -66,32 +66,38 @@ function Dashboard() {
             <p className="stat-subtext">Generation pipeline status</p>
           </article>
 
-          <article className="bento-card stat-card">
-            <div className="stat-top">
-              <span className="stat-icon"><FaChalkboardTeacher /></span>
-            </div>
-            <h3>Total Faculty</h3>
-            <p className="stat-number">{stats.loading ? '...' : stats.facultyCount}</p>
-            <p className="stat-subtext">Assignable instructors</p>
-          </article>
+          <Link to="/faculty" className="stat-card-link">
+            <article className="bento-card stat-card">
+              <div className="stat-top">
+                <span className="stat-icon"><FaChalkboardTeacher /></span>
+              </div>
+              <h3>Total Faculty</h3>
+              <p className="stat-number">{stats.loading ? '...' : stats.facultyCount}</p>
+              <p className="stat-subtext">Assignable instructors</p>
+            </article>
+          </Link>
 
-          <article className="bento-card stat-card">
-            <div className="stat-top">
-              <span className="stat-icon"><FaBookOpen /></span>
-            </div>
-            <h3>Total Subjects</h3>
-            <p className="stat-number">{stats.loading ? '...' : stats.subjectsCount}</p>
-            <p className="stat-subtext">Active course offerings</p>
-          </article>
+          <Link to="/subjects" className="stat-card-link">
+            <article className="bento-card stat-card">
+              <div className="stat-top">
+                <span className="stat-icon"><FaBookOpen /></span>
+              </div>
+              <h3>Total Subjects</h3>
+              <p className="stat-number">{stats.loading ? '...' : stats.subjectsCount}</p>
+              <p className="stat-subtext">Active course offerings</p>
+            </article>
+          </Link>
 
-          <article className="bento-card stat-card">
-            <div className="stat-top">
-              <span className="stat-icon"><FaDoorOpen /></span>
-            </div>
-            <h3>Total Rooms</h3>
-            <p className="stat-number">{stats.loading ? '...' : stats.roomsCount}</p>
-            <p className="stat-subtext">Available room inventory</p>
-          </article>
+          <Link to="/rooms" className="stat-card-link">
+            <article className="bento-card stat-card">
+              <div className="stat-top">
+                <span className="stat-icon"><FaDoorOpen /></span>
+              </div>
+              <h3>Total Rooms</h3>
+              <p className="stat-number">{stats.loading ? '...' : stats.roomsCount}</p>
+              <p className="stat-subtext">Available room inventory</p>
+            </article>
+          </Link>
 
           <article className="bento-card stat-card">
             <div className="stat-top">

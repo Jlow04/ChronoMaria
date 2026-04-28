@@ -1,7 +1,9 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { FaBookOpen, FaClock, FaSitemap } from 'react-icons/fa';
 import Navbar from '../components/Navbar';
-import { subjectService } from '../services/api';
+import { subjectService, departmentService } from '../services/api';
+import { getUserDepartmentName } from '../services/authHelper';
 import './Subjects.css';
 
 const emptySubject = {
@@ -13,7 +15,10 @@ const emptySubject = {
 };
 
 function Subjects() {
+  const navigate = useNavigate();
+  const userDepartment = getUserDepartmentName();
   const [subjects, setSubjects] = useState([]);
+  const [availablePrograms, setAvailablePrograms] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [showModal, setShowModal] = useState(false);
@@ -30,7 +35,22 @@ function Subjects() {
 
   useEffect(() => {
     loadSubjects();
+    loadPrograms();
   }, []);
+
+  const loadPrograms = async () => {
+    try {
+      const allDepartments = await departmentService.getAll();
+      // Filter to only show programs matching the user's department
+      const userPrograms = allDepartments.filter(
+        (dept) => dept.department_name === userDepartment
+      );
+      setAvailablePrograms(userPrograms);
+    } catch (error) {
+      console.error('Error loading programs:', error);
+      setError('Unable to load programs.');
+    }
+  };
 
   const loadSubjects = async () => {
     setLoading(true);
@@ -143,11 +163,11 @@ function Subjects() {
   };
 
   const selectDepartment = (department) => {
+    // Single-select: select this program
     setCurrentSubject((prev) => ({
       ...prev,
-      department,
+      department_id: department.department_id,
     }));
-    setShowDepartmentPicker(false);
   };
 
   return (
@@ -241,6 +261,9 @@ function Subjects() {
             <button className="btn btn-primary" onClick={() => setShowModal(true)}>
               Add Subject
             </button>
+            <button className="btn btn-primary" onClick={() => navigate('/dashboard')}>
+              Return to Dashboard
+            </button>
           </div>
         </div>
 
@@ -253,7 +276,7 @@ function Subjects() {
                   <th>Name</th>
                   <th>Units</th>
                   <th>Hours/Week</th>
-                  <th>Department</th>
+                  <th>Program</th>
                   <th>Actions</th>
                 </tr>
               </thead>
@@ -273,7 +296,7 @@ function Subjects() {
                       <td>{item.name}</td>
                       <td>{item.units}</td>
                       <td>{item.hours_per_week}</td>
-                      <td>{item.department}</td>
+                      <td>{item.program}</td>
                       <td className="subjects-actions-cell">
                         <button className="btn btn-secondary" onClick={() => handleEdit(item)}>Edit</button>
                         <button className="btn btn-danger" onClick={() => handleDelete(item.id)}>Delete</button>
@@ -331,13 +354,15 @@ function Subjects() {
                   />
                 </div>
                 <div className="form-group">
-                  <label>Department</label>
+                  <label>Program</label>
                   <button
                     type="button"
                     className="subjects-department-picker-btn"
                     onClick={() => setShowDepartmentPicker(true)}
                   >
-                    {currentSubject.department || 'Choose department'}
+                    {currentSubject.department_id
+                      ? availablePrograms.find(p => p.department_id === currentSubject.department_id)?.department_program || 'Choose program'
+                      : 'Choose program'}
                   </button>
                 </div>
                 <div className="modal-footer">
@@ -355,24 +380,25 @@ function Subjects() {
           <div className="modal-overlay" onClick={triggerDepartmentAttention}>
             <div className={`modal-content subjects-department-picker-modal ${shakeDepartmentPicker ? 'modal-shake' : ''}`} onClick={(e) => e.stopPropagation()}>
               <div className="modal-header">
-                <h2>Choose Department</h2>
+                <h2>Choose Program</h2>
               </div>
               {departmentPrompt && <p className="modal-focus-prompt">{departmentPrompt}</p>}
               <div className="subjects-department-picker-body">
-                {departments.length === 0 ? (
-                  <p className="subjects-department-empty">No departments available yet.</p>
+                {availablePrograms.length === 0 ? (
+                  <p className="subjects-department-empty">No programs available in your department.</p>
                 ) : (
                   <div className="subjects-department-picker-list">
-                    {departments.map((department) => (
-                      <label key={department} className="subjects-department-option">
+                    {availablePrograms.map((program) => (
+                      <label key={program.department_id} className="subjects-department-option">
                         <input
-                          type="checkbox"
-                          checked={currentSubject.department === department}
-                          onChange={() => selectDepartment(department)}
+                          type="radio"
+                          name="program"
+                          checked={currentSubject.department_id === program.department_id}
+                          onChange={() => selectDepartment(program)}
                         />
                         <span className="subjects-department-option-content">
-                          <span>{department}</span>
-                          {currentSubject.department === department && (
+                          <span>{program.department_program}</span>
+                          {currentSubject.department_id === program.department_id && (
                             <span className="subjects-department-option-check" aria-hidden="true">✓</span>
                           )}
                         </span>

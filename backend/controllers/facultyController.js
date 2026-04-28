@@ -5,10 +5,11 @@ exports.getAllFaculty = async (req, res) => {
     const {
       search = '',
       sortBy = 'id',
-      sortOrder = 'asc'
+      sortOrder = 'asc',
+      department
     } = req.query;
 
-    const faculty = await Faculty.getAll({ search, sortBy, sortOrder });
+    const faculty = await Faculty.getAll({ search, sortBy, sortOrder, department });
     res.json(faculty);
   } catch (error) {
     res.status(500).json({ error: error.message });

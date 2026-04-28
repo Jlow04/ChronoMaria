@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { FaDoorOpen, FaFlask, FaUsers } from 'react-icons/fa';
 import Navbar from '../components/Navbar';
 import { roomService } from '../services/api';
@@ -12,6 +13,7 @@ const emptyRoom = {
 };
 
 function Rooms() {
+  const navigate = useNavigate();
   const [rooms, setRooms] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -218,6 +220,9 @@ function Rooms() {
           <div className="actions rooms-actions">
             <button className="btn btn-primary" onClick={() => setShowModal(true)}>
               Add Room
+            </button>
+            <button className="btn btn-primary" onClick={() => navigate('/dashboard')}>
+              Return to Dashboard
             </button>
           </div>
         </div>

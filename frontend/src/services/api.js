@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { getDepartmentFilter } from './authHelper';
 
 const API_BASE_URL = 'http://localhost:5000/api';
 
@@ -8,6 +9,30 @@ const api = axios.create({
     'Content-Type': 'application/json',
   },
 });
+
+// Department Service
+export const departmentService = {
+  getAll: async () => {
+    const response = await api.get('/departments');
+    return response.data;
+  },
+  getById: async (id) => {
+    const response = await api.get(`/departments/${id}`);
+    return response.data;
+  },
+  create: async (data) => {
+    const response = await api.post('/departments', data);
+    return response.data;
+  },
+  update: async (id, data) => {
+    const response = await api.put(`/departments/${id}`, data);
+    return response.data;
+  },
+  delete: async (id) => {
+    const response = await api.delete(`/departments/${id}`);
+    return response.data;
+  },
+};
 
 // User Service
 export const userService = {
@@ -19,8 +44,8 @@ export const userService = {
     const response = await api.get('/users');
     return response.data;
   },
-  create: async (username, password, email, currentUsername) => {
-    const response = await api.post('/users', { username, password, email, admin_username: currentUsername });
+  create: async (username, password, email, currentUsername, department_id) => {
+    const response = await api.post('/users', { username, password, email, admin_username: currentUsername, department_id });
     return response.data;
   },
   update: async (id, role, is_active, currentUsername) => {
@@ -36,7 +61,14 @@ export const userService = {
 // Faculty Service
 export const facultyService = {
   getAll: async (params = {}) => {
-    const response = await api.get('/faculty', { params });
+    const departmentFilter = getDepartmentFilter();
+    const queryParams = { ...params };
+
+    if (departmentFilter) {
+      queryParams.department = departmentFilter;
+    }
+
+    const response = await api.get('/faculty', { params: queryParams });
     return response.data;
   },
   getById: async (id) => {
@@ -60,7 +92,14 @@ export const facultyService = {
 // Subject Service
 export const subjectService = {
   getAll: async () => {
-    const response = await api.get('/subjects');
+    const departmentFilter = getDepartmentFilter();
+    const params = {};
+
+    if (departmentFilter) {
+      params.department = departmentFilter;
+    }
+
+    const response = await api.get('/subjects', { params });
     return response.data;
   },
   getById: async (id) => {
@@ -84,7 +123,14 @@ export const subjectService = {
 // Room Service
 export const roomService = {
   getAll: async () => {
-    const response = await api.get('/rooms');
+    const departmentFilter = getDepartmentFilter();
+    const params = {};
+
+    if (departmentFilter) {
+      params.department = departmentFilter;
+    }
+
+    const response = await api.get('/rooms', { params });
     return response.data;
   },
   getById: async (id) => {
